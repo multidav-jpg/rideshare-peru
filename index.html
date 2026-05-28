@@ -3,11 +3,609 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RideShare Perú - Viajes Compartidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; transition: background 0.3s, color 0.3s; }
+        body.dark { background: #111827; color: #f3f4f6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
+        .logo-text h1 { font-size: 1.7rem; font-weight: 700; background: linear-gradient(135deg, #2563eb, #06b6d4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .logo-text p { font-size: 0.85rem; color: #6b7280; }
+        
+        .user-menu { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .btn-icon { background: white; border: none; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; position: relative; }
+        body.dark .btn-icon { background: #1f2937; color: white; }
+        .theme-toggle { background: white; border: none; padding: 10px 16px; border-radius: 40px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        body.dark .theme-toggle { background: #1f2937; color: white; }
+        .btn-back { background: #e5e7eb; border: none; padding: 10px 20px; border-radius: 40px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+        body.dark .btn-back { background: #374151; color: white; }
+        
+        .dashboard { display: grid; grid-template-columns: 1fr 1.5fr; gap: 28px; }
+        @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } }
+        .card { background: white; border-radius: 28px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.05); }
+        body.dark .card { background: #1f2937; border-color: #374151; }
+        .card-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
+        body.dark .card-title { border-bottom-color: #374151; }
+        .card-title i { color: #2563eb; }
+        
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: #4b5563; }
+        body.dark .form-group label { color: #9ca3af; }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; z-index: 2; }
+        input, select, textarea { width: 100%; padding: 14px 14px 14px 42px; border: 1.5px solid #e5e7eb; border-radius: 18px; font-size: 0.95rem; font-family: 'Inter', sans-serif; background: white; }
+        body.dark input, body.dark select, body.dark textarea { background: #374151; border-color: #4b5563; color: white; }
+        input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .row-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb, #06b6d4); color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(37,99,235,0.3); }
+        
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000; margin-top: 4px; display: none; }
+        body.dark .autocomplete-suggestions { background: #1f2937; border: 1px solid #374151; }
+        .autocomplete-suggestion { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
+        body.dark .autocomplete-suggestion { border-bottom-color: #374151; color: white; }
+        .autocomplete-suggestion:hover { background: #f3f4f6; }
+        body.dark .autocomplete-suggestion:hover { background: #374151; }
+        
+        .filter-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; }
+        @media (max-width: 600px) { .filter-row { grid-template-columns: 1fr; } }
+        
+        .trips-list { display: flex; flex-direction: column; gap: 16px; max-height: 600px; overflow-y: auto; padding-right: 8px; }
+        .trips-list::-webkit-scrollbar { width: 6px; }
+        .trips-list::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        .trips-list::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+        .trip-card { background: #f9fafb; border-radius: 24px; padding: 20px; transition: all 0.2s; border: 1px solid #e5e7eb; cursor: pointer; }
+        body.dark .trip-card { background: #2d3748; border-color: #374151; }
+        .trip-card:hover { transform: translateX(4px); border-color: #2563eb; }
+        .trip-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .driver { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .driver-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
+        .driver-info h4 { font-weight: 600; margin-bottom: 2px; }
+        .stars { display: flex; gap: 2px; margin-top: 4px; }
+        .stars i { font-size: 0.7rem; color: #fbbf24; }
+        .seats-badge { background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; font-weight: 600; }
+        .trip-route { margin: 14px 0; padding: 12px 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+        .route-point { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .route-point i { width: 20px; color: #6b7280; }
+        .route-point strong { font-weight: 600; }
+        .trip-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+        .price { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+        .price small { font-size: 0.8rem; font-weight: normal; color: #6b7280; }
+        .trip-actions { display: flex; gap: 8px; }
+        .btn-reserve { background: #2563eb; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-edit { background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        
+        .badges-container { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; justify-content: center; }
+        .badge-item { border-radius: 60px; padding: 8px 16px; display: flex; align-items: center; gap: 8px; color: white; font-size: 0.8rem; font-weight: 500; }
+        .badge-item.bronze { background: linear-gradient(135deg, #d97706, #b45309); }
+        .badge-item.silver { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+        .badge-item.gold { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .badge-item.platinum { background: linear-gradient(135deg, #06b6d4, #2563eb); }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: #f3f4f6; border-radius: 16px; padding: 12px; text-align: center; }
+        body.dark .stat-card { background: #374151; }
+        .stat-number { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+        .stat-label { font-size: 0.7rem; color: #6b7280; }
+        
+        .share-whatsapp { background: #25D366; color: white; border: none; padding: 6px 12px; border-radius: 40px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; }
+        .share-whatsapp:hover { background: #128C7E; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 28px; max-width: 400px; width: 90%; padding: 28px; position: relative; }
+        body.dark .modal-content { background: #1f2937; }
+        .close-modal { position: absolute; top: 16px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+        .rating-stars { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+        .rating-stars i { font-size: 2rem; cursor: pointer; color: #d1d5db; transition: all 0.2s; }
+        .rating-stars i:hover, .rating-stars i.active { color: #fbbf24; transform: scale(1.1); }
+        
+        .empty-state { text-align: center; padding: 48px 20px; color: #9ca3af; }
+        .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 14px 24px; border-radius: 50px; display: none; align-items: center; gap: 10px; z-index: 1000; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .login-container { max-width: 500px; margin: 60px auto; }
+        .avatar-small { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        .badge { background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; }
+        .estado-completado { background: #d1fae5; color: #10b981; padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; }
+        .estado-pendiente { background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; }
+        .mis-viajes-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        .mis-viajes-tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 500; color: #6b7280; }
+        .mis-viajes-tab.active { color: #2563eb; border-bottom: 2px solid #2563eb; }
+    </style>
+</head>
+<body>
+    <div class="container" id="appContainer">
+        <div class="header">
+            <div class="logo-area" id="goHomeBtn">
+                <div class="logo-icon"><i class="fas fa-car-side"></i></div>
+                <div class="logo-text"><h1>RideShare Perú 🇵🇪</h1><p>Viajes compartidos seguros</p></div>
+            </div>
+            <div class="user-menu" id="userMenu" style="display: none;">
+                <div id="userAvatarSmall" class="avatar-small" style="background: #2563eb;"><i class="fas fa-user"></i></div>
+                <span id="userNameDisplay" style="font-weight: 500;"></span>
+                <button class="btn-icon" id="misViajesBtn"><i class="fas fa-calendar-alt"></i><span>Mis viajes</span></button>
+                <button class="btn-icon" id="logrosBtn"><i class="fas fa-trophy"></i><span>Logros</span></button>
+                <button class="btn-icon" id="publicarViajeBtn"><i class="fas fa-plus-circle"></i><span>Publicar</span></button>
+                <button class="btn-icon" id="miPerfilBtn"><i class="fas fa-user"></i><span>Perfil</span></button>
+                <button class="btn-icon" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Salir</span></button>
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i><span>Modo oscuro</span></button>
+            </div>
+        </div>
+        <div id="mainContent"></div>
+    </div>
+
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="cerrarModal()">&times;</button>
+            <h3 id="modalTitle" style="text-align:center;">Calificar</h3>
+            <div class="rating-stars" id="modalStars">
+                <i class="far fa-star" data-rating="1"></i>
+                <i class="far fa-star" data-rating="2"></i>
+                <i class="far fa-star" data-rating="3"></i>
+                <i class="far fa-star" data-rating="4"></i>
+                <i class="far fa-star" data-rating="5"></i>
+            </div>
+            <textarea id="comentario" placeholder="Escribe un comentario (opcional)" style="width:100%; margin:16px 0; padding:12px; border-radius:16px; border:1px solid #e5e7eb;"></textarea>
+            <button class="btn-primary" id="enviarCalificacionBtn">Enviar calificación</button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============ LISTA DE CIUDADES DE PERÚ ============
+        const ciudadesPeru = ["Lima","Arequipa","Trujillo","Chiclayo","Piura","Cusco","Iquitos","Huancayo","Chimbote","Pucallpa","Tacna","Ica","Juliaca","Sullana","Cajamarca","Ayacucho","Chincha Alta","Huánuco","Tarapoto","Puno","Tumbes","Huaraz","Moquegua","Pisco","Jaén","Barranca","Talara","Abancay","Moyobamba","Puerto Maldonado","Cerro de Pasco","Huacho","Chepén","Huamanga","Andahuaylas","Camaná","Lambayeque","Nazca","Paita","Sechura","Yurimaguas","Bagua Grande","Tingo María","Chachapoyas"];
+        let searchCache = new Map();
+        let currentTimeout = null;
+
+        async function buscarCiudadesPeru(query, inputId) {
+            const suggestionsDiv = document.getElementById(inputId + 'Suggestions');
+            if (!query || query.length < 2) { if(suggestionsDiv) suggestionsDiv.style.display = 'none'; return; }
+            const cacheKey = query.toLowerCase();
+            if (searchCache.has(cacheKey)) { mostrarSugerencias(searchCache.get(cacheKey), suggestionsDiv, inputId); return; }
+            if(suggestionsDiv) suggestionsDiv.innerHTML = '<div style="padding:12px;text-align:center;">Buscando...</div>';
+            if(suggestionsDiv) suggestionsDiv.style.display = 'block';
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&addressdetails=1&countrycodes=pe&accept-language=es`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } });
+                const data = await response.json();
+                let resultados = [];
+                if (data.length > 0) { resultados = data.map(lugar => ({ nombre: lugar.display_name.split(',')[0].trim(), region: lugar.address.state || 'Perú' })); }
+                else { resultados = ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' })); }
+                searchCache.set(cacheKey, resultados);
+                mostrarSugerencias(resultados, suggestionsDiv, inputId);
+            } catch(error) {
+                const localResults = ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' }));
+                mostrarSugerencias(localResults, suggestionsDiv, inputId);
+            }
+        }
+        
+        function mostrarSugerencias(resultados, suggestionsDiv, inputId) {
+            if (!suggestionsDiv) return;
+            if (resultados.length === 0) { suggestionsDiv.innerHTML = '<div style="padding:12px;">No encontrado</div>'; return; }
+            suggestionsDiv.innerHTML = resultados.map(lugar => `<div class="autocomplete-suggestion" onclick="seleccionarCiudad('${inputId}', '${escapeHtml(lugar.nombre)}')"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(lugar.nombre)}</span><span style="margin-left:auto; font-size:0.7rem;">${escapeHtml(lugar.region)}</span></div>`).join('');
+        }
+        
+        function seleccionarCiudad(inputId, ciudad) { 
+            document.getElementById(inputId).value = ciudad; 
+            const suggestionsDiv = document.getElementById(inputId + 'Suggestions');
+            if(suggestionsDiv) suggestionsDiv.style.display = 'none'; 
+        }
+        
+        function setupAutocomplete(inputId) {
+            const input = document.getElementById(inputId);
+            if(!input) return;
+            input.addEventListener('input', function(e) { if(currentTimeout) clearTimeout(currentTimeout); currentTimeout = setTimeout(() => buscarCiudadesPeru(this.value, inputId), 300); });
+            input.addEventListener('blur', function() { setTimeout(() => { const div = document.getElementById(inputId + 'Suggestions'); if(div) div.style.display = 'none'; }, 200); });
+            input.addEventListener('focus', function() { if(this.value.length >= 2) buscarCiudadesPeru(this.value, inputId); });
+        }
+
+        // ============ DATOS GLOBALES ============
+        let usuarios = [];
+        let viajes = [];
+        let reservas = [];
+        let calificaciones = [];
+        let sesionActual = null;
+        let vistaActual = 'home';
+        let misViajesTab = 'conductor';
+        let perfilViewId = null;
+        let notificacionesPermiso = false;
+
+        // ============ INSIGNIAS ============
+        function calcularInsignias(usuario) {
+            const viajesConductor = reservas.filter(r => { const v = viajes.find(vv => vv.id === r.viajeId); return v && v.conductorId === usuario.id && r.estado === 'completado'; }).length;
+            const viajesPasajero = reservas.filter(r => r.pasajeroId === usuario.id && r.estado === 'completado').length;
+            const califs = calificaciones.filter(c => c.receptorId === usuario.id);
+            const califProm = califs.length > 0 ? califs.reduce((a,b)=>a+b.puntaje,0)/califs.length : 0;
+            const rutas = new Set(viajes.filter(v => v.conductorId === usuario.id).map(v => `${v.origen}-${v.destino}`)).size;
+            
+            const insignias = [];
+            if(viajesConductor >= 1) insignias.push({ nombre: '🚗 Primer Viaje', color: 'bronze', icono: 'fa-car' });
+            if(viajesPasajero >= 5) insignias.push({ nombre: '🌟 Viajero Frecuente', color: 'silver', icono: 'fa-star' });
+            if(califProm > 4.5) insignias.push({ nombre: '⭐ Conductor Estrella', color: 'gold', icono: 'fa-star-half-alt' });
+            if(viajesConductor >= 10) insignias.push({ nombre: '🏆 Super Conductor', color: 'platinum', icono: 'fa-trophy' });
+            if(califProm > 4.0) insignias.push({ nombre: '⏰ Puntual', color: 'silver', icono: 'fa-clock' });
+            if(rutas >= 3) insignias.push({ nombre: '🗺️ Experto en Rutas', color: 'gold', icono: 'fa-map' });
+            return insignias;
+        }
+
+        // ============ CALIFICACIONES ============
+        function agregarCalificacion(emisorId, receptorId, tipo, puntaje, comentario, viajeId) {
+            calificaciones.push({ id: Date.now(), emisorId, receptorId, tipo, puntaje, comentario, viajeId, fecha: new Date().toISOString() });
+            guardarCalificaciones();
+        }
+        
+        function yaCalifico(emisorId, receptorId, viajeId, tipo) { 
+            return calificaciones.some(c => c.emisorId === emisorId && c.receptorId === receptorId && c.viajeId === viajeId && c.tipo === tipo); 
+        }
+        
+        function obtenerCalificacionPromedio(usuarioId) { 
+            const c = calificaciones.filter(ca => ca.receptorId === usuarioId); 
+            if(c.length === 0) return 0; 
+            return c.reduce((a,b)=>a+b.puntaje,0)/c.length; 
+        }
+        
+        function renderStars(rating) { 
+            let s = ''; 
+            for(let i=1;i<=5;i++) s += i<=Math.round(rating) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; 
+            return s; 
+        }
+
+        // ============ COMPARTIR WHATSAPP ============
+        function compartirViajeWhatsApp(viaje) {
+            const msg = `🚗 RideShare Perú%0A%0A📅 Viaje: ${viaje.origen} → ${viaje.destino}%0A📆 Fecha: ${new Date(viaje.fecha).toLocaleDateString('es-ES')}%0A⏰ Hora: ${viaje.hora || 'Flexible'}%0A💺 Plazas: ${viaje.plazasOriginal - (viaje.plazasReservadas||0)}/${viaje.plazasOriginal}%0A💰 Precio: S/ ${viaje.precio}%0A👤 Conductor: ${viaje.conductorNombre}`;
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+        }
+
+        // ============ RESERVAS ============
+        function generarCodigo() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+        
+        function crearReserva(viajeId, pasajeroId) { 
+            const r = { id: Date.now(), viajeId, pasajeroId, codigo: generarCodigo(), estado: 'pendiente', fechaReserva: new Date().toISOString() }; 
+            reservas.push(r); 
+            guardarReservas(); 
+            return r; 
+        }
+        
+        function obtenerReserva(viajeId, pasajeroId) { return reservas.find(r => r.viajeId === viajeId && r.pasajeroId === pasajeroId); }
+        
+        function obtenerReservasPorViaje(viajeId) { return reservas.filter(r => r.viajeId === viajeId); }
+        
+        function validarCodigo(viajeId, pasajeroId, codigo) { 
+            const r = obtenerReserva(viajeId, pasajeroId); 
+            if(!r) return {valido:false, mensaje:'No encontrada'}; 
+            if(r.estado === 'completado') return {valido:false, mensaje:'Ya completado'}; 
+            if(r.codigo === codigo) { 
+                r.estado = 'completado'; 
+                r.fechaCompletado = new Date().toISOString(); 
+                guardarReservas(); 
+                return {valido:true, mensaje:'✅ Viaje completado'}; 
+            } 
+            return {valido:false, mensaje:'❌ Código incorrecto'}; 
+        }
+        
+        function reservarViaje(viajeId) {
+            const viaje = viajes.find(v => v.id === viajeId);
+            if(!viaje) return false;
+            const plazasRestantes = viaje.plazasOriginal - (viaje.plazasReservadas||0);
+            if(plazasRestantes <= 0) { mostrarToast('Sin plazas disponibles', '#ef4444'); return false; }
+            if(obtenerReserva(viajeId, sesionActual.id)) { mostrarToast('Ya reservaste este viaje', '#ef4444'); return false; }
+            const nueva = crearReserva(viajeId, sesionActual.id);
+            viaje.plazasReservadas = (viaje.plazasReservadas||0) + 1;
+            if(!viaje.pasajeros) viaje.pasajeros = [];
+            viaje.pasajeros.push(sesionActual.id);
+            guardarViajes();
+            mostrarToast(`✅ Reserva confirmada. Código: ${nueva.codigo}`, '#10b981');
+            return true;
+        }
+
+        // ============ PERSISTENCIA ============
+        function cargarDatos() {
+            usuarios = JSON.parse(localStorage.getItem('rideshare_usuarios') || '[]');
+            viajes = JSON.parse(localStorage.getItem('rideshare_viajes') || '[]');
+            reservas = JSON.parse(localStorage.getItem('rideshare_reservas') || '[]');
+            calificaciones = JSON.parse(localStorage.getItem('rideshare_calificaciones') || '[]');
+        }
+        
+        function guardarUsuarios() { localStorage.setItem('rideshare_usuarios', JSON.stringify(usuarios)); }
+        function guardarViajes() { localStorage.setItem('rideshare_viajes', JSON.stringify(viajes)); }
+        function guardarReservas() { localStorage.setItem('rideshare_reservas', JSON.stringify(reservas)); }
+        function guardarCalificaciones() { localStorage.setItem('rideshare_calificaciones', JSON.stringify(calificaciones)); }
+        
+        function guardarSesion(usuario) { 
+            const s = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, telefono: usuario.telefono, verificado: usuario.verificado||false, vehiculo: usuario.vehiculo, avatar: usuario.avatar||{tipo:'color',color:'#2563eb',icono:'fas fa-user'} }; 
+            localStorage.setItem('rideshare_sesion', JSON.stringify(s)); 
+            sesionActual = s; 
+        }
+        
+        function cargarSesion() { 
+            const g = localStorage.getItem('rideshare_sesion'); 
+            if(g) { 
+                sesionActual = JSON.parse(g); 
+                if(usuarios.find(u=>u.id===sesionActual.id)) return true; 
+                else { cerrarSesion(); return false; } 
+            } 
+            return false; 
+        }
+        
+        function cerrarSesion() { 
+            localStorage.removeItem('rideshare_sesion'); 
+            sesionActual = null; 
+            vistaActual = 'home'; 
+            renderApp(); 
+        }
+        
+        function mostrarToast(m, c='#1f2937') { 
+            const t = document.getElementById('toast'); 
+            t.style.display = 'flex'; 
+            t.style.background = c; 
+            t.innerHTML = `<i class="fas ${c==='#10b981'?'fa-check-circle':(c==='#ef4444'?'fa-exclamation-circle':'fa-info-circle')}"></i> ${m}`; 
+            t.style.animation = 'slideUp 0.3s ease'; 
+            setTimeout(() => t.style.display = 'none', 4000); 
+        }
+        
+        function validarEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+        function emailExiste(e, id=null) { return usuarios.some(u => u.email === e && u.id !== id); }
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+        // ============ RENDER AVATAR ============
+        function renderizarAvatar(avatar, size='large') { 
+            const px = size==='large'?'100px':'36px'; 
+            const fs = size==='large'?'40px':'16px'; 
+            if(avatar?.tipo==='imagen' && avatar.imagen) return `<img src="${avatar.imagen}" style="width:${px};height:${px};border-radius:50%;object-fit:cover;">`; 
+            else if(avatar?.tipo==='color') return `<div style="width:${px};height:${px};border-radius:50%;background:${avatar.color||'#2563eb'};display:flex;align-items:center;justify-content:center;color:white;font-size:${fs};"><i class="${avatar.icono||'fas fa-user'}"></i></div>`; 
+            else return `<div style="width:${px};height:${px};border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;color:white;font-size:${fs};"><i class="fas fa-user"></i></div>`; 
+        }
+
+        // ============ RENDER PRINCIPAL ============
+        function renderApp() {
+            const main = document.getElementById('mainContent');
+            const userMenu = document.getElementById('userMenu');
+            const nameDisplay = document.getElementById('userNameDisplay');
+            const avatarSmall = document.getElementById('userAvatarSmall');
+            
+            if(!sesionActual) { 
+                userMenu.style.display = 'none'; 
+                main.innerHTML = renderLoginRegister(); 
+                setupLoginEvents(); 
+                return; 
+            }
+            
+            userMenu.style.display = 'flex';
+            nameDisplay.innerHTML = sesionActual.nombre;
+            if(avatarSmall) avatarSmall.innerHTML = renderizarAvatar(sesionActual.avatar, 'small');
+            
+            if(vistaActual === 'misViajes') { main.innerHTML = renderMisViajes(); setupMisViajesEvents(); }
+            else if(vistaActual === 'logros') { main.innerHTML = renderLogros(); setupLogrosEvents(); }
+            else if(vistaActual === 'publicarViaje') { main.innerHTML = renderPublicarViaje(); setupPublicarViajeEvents(); }
+            else if(vistaActual === 'miPerfil') { main.innerHTML = renderMiPerfil(); setupMiPerfilEvents(); }
+            else if(vistaActual === 'perfilPublico' && perfilViewId) { main.innerHTML = renderPerfilPublico(); setupPerfilPublicoEvents(); }
+            else { main.innerHTML = renderHome(); setupHomeEvents(); }
+        }
+
+        function renderLoginRegister() { 
+            return `<div class="login-container"><div class="card"><div style="text-align:center;"><div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#06b6d4);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><i class="fas fa-car-side" style="font-size:40px;color:white;"></i></div><h2>Bienvenido</h2><p style="color:#6b7280;">Regístrate o inicia sesión</p></div><div style="display:flex;gap:12px;margin-bottom:24px;"><button class="btn-primary" id="showLoginBtn" style="margin:0">Iniciar sesión</button><button class="btn-primary" id="showRegisterBtn" style="margin:0;background:#e5e7eb;color:#1f2937;">Registrarse</button></div><div id="loginPanel"><div class="form-group"><input type="email" id="loginEmail" placeholder="Correo electrónico"></div><div class="form-group"><input type="password" id="loginPassword" placeholder="Contraseña"></div><button class="btn-primary" id="doLoginBtn">Iniciar sesión</button></div><div id="registerPanel" style="display:none;"><div class="form-group"><input type="text" id="regNombre" placeholder="Nombre completo"></div><div class="form-group"><input type="email" id="regEmail" placeholder="Correo electrónico"></div><div class="form-group"><input type="tel" id="regTelefono" placeholder="Teléfono"></div><div class="form-group"><input type="password" id="regPassword" placeholder="Contraseña (mínimo 6)"></div><div class="form-group"><input type="password" id="regConfirmPassword" placeholder="Confirmar contraseña"></div><button class="btn-primary" id="doRegisterBtn">Crear cuenta</button></div></div></div>`; 
+        }
+
+        function renderHome() { 
+            const disponibles = viajes.filter(v => v.fecha >= new Date().toISOString().split('T')[0] && v.conductorId !== sesionActual?.id).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)); 
+            if(disponibles.length === 0) return `<div class="card"><div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes disponibles</p></div></div>`; 
+            return `<div class="card"><div class="card-title"><i class="fas fa-list-ul"></i><span>Viajes disponibles (${disponibles.length})</span></div><div class="trips-list">${disponibles.map(v => renderTripCard(v)).join('')}</div></div>`; 
+        }
+        
+        function renderTripCard(v) { 
+            const c = usuarios.find(u=>u.id===v.conductorId); 
+            const rating = obtenerCalificacionPromedio(v.conductorId); 
+            const fecha = new Date(v.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'long'}); 
+            const plazas = v.plazasOriginal - (v.plazasReservadas||0); 
+            const reservado = obtenerReserva(v.id, sesionActual?.id); 
+            return `<div class="trip-card"><div class="trip-header"><div class="driver" data-conductor-id="${v.conductorId}"><div class="driver-avatar">${(c?.nombre?.charAt(0)||'U')}</div><div class="driver-info"><h4>${escapeHtml(v.conductorNombre)}</h4><div class="stars">${renderStars(rating)}</div></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazas}/${v.plazasOriginal} plazas</div></div><div class="trip-route"><div class="route-point"><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong>${escapeHtml(v.origen)}</strong></div><div class="route-point"><i class="fas fa-arrow-down" style="color:#9ca3af;"></i><strong>${escapeHtml(v.destino)}</strong></div></div><div class="trip-footer"><div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i><span style="font-size:0.85rem;">${fecha} ${v.hora?`• ${v.hora}`:''}</span></div><div class="price">S/ ${v.precio}<small> por persona</small></div></div><div class="trip-actions">${reservado ? `<span class="estado-pendiente">Reservado</span>` : (plazas>0 ? `<button class="btn-reserve" data-viaje-id="${v.id}"><i class="fas fa-check-circle"></i> Reservar</button>` : `<span class="estado-pendiente" style="background:#fee2e2;color:#ef4444;">Sin plazas</span>`)}<button class="share-whatsapp" onclick="event.stopPropagation(); compartirViajeWhatsApp(${JSON.stringify(v).replace(/"/g,'&quot;')})"><i class="fab fa-whatsapp"></i></button></div></div></div>`; 
+        }
+
+        function renderMisViajes() { 
+            const viajesCond = viajes.filter(v=>v.conductorId===sesionActual.id); 
+            const viajesPasIds = reservas.filter(r=>r.pasajeroId===sesionActual.id).map(r=>r.viajeId); 
+            const viajesPas = viajes.filter(v=>viajesPasIds.includes(v.id)); 
+            return `<button class="btn-back" id="backToHomeBtn"><i class="fas fa-arrow-left"></i> Volver</button><div class="card"><div class="card-title"><i class="fas fa-calendar-alt"></i><span>Mis viajes</span></div><div class="mis-viajes-tabs"><button class="mis-viajes-tab ${misViajesTab==='conductor'?'active':''}" data-tab="conductor">🚗 Conductor (${viajesCond.length})</button><button class="mis-viajes-tab ${misViajesTab==='pasajero'?'active':''}" data-tab="pasajero">👤 Pasajero (${viajesPas.length})</button></div><div id="misViajesContent">${misViajesTab==='conductor' ? viajesCond.map(v=>renderViajeConductor(v)).join('') : viajesPas.map(v=>renderViajePasajero(v)).join('')}</div></div>`; 
+        }
+        
+        function renderViajeConductor(v) { 
+            const reservasV = obtenerReservasPorViaje(v.id); 
+            const fecha = new Date(v.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); 
+            return `<div class="trip-card"><div style="display:flex;justify-content:space-between;"><strong>${v.origen} → ${v.destino}</strong><button class="share-whatsapp" onclick="compartirViajeWhatsApp(${JSON.stringify(v).replace(/"/g,'&quot;')})"><i class="fab fa-whatsapp"></i></button></div><div style="font-size:0.75rem;color:#6b7280;">${fecha} ${v.hora||''}</div><div style="margin-top:12px;"><strong>Pasajeros (${reservasV.length}/${v.plazasOriginal}):</strong>${reservasV.length===0?'<p>No hay reservas</p>':reservasV.map(r=>{ const p=usuarios.find(u=>u.id===r.pasajeroId); const yaC = yaCalifico(sesionActual.id, r.pasajeroId, v.id, 'conductor_a_pasajero'); return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f3f4f6;border-radius:12px;"><div>${renderizarAvatar(p?.avatar,'small')} ${p?.nombre||'Usuario'}</div><div>${r.estado==='pendiente'?`<span class="estado-pendiente">Código: ${r.codigo}</span><button class="verificar-codigo" data-viaje="${v.id}" data-pasajero="${r.pasajeroId}" style="margin-left:8px;background:#2563eb;color:white;border:none;padding:4px 12px;border-radius:40px;">Verificar</button>`:`<span class="estado-completado">Completado</span>${!yaC?`<button class="calificar-btn" data-usuario="${r.pasajeroId}" data-viaje="${v.id}" data-nombre="${p?.nombre}" data-tipo="conductor_a_pasajero" style="margin-left:8px;background:#f59e0b;color:white;border:none;padding:4px 12px;border-radius:40px;">⭐ Calificar</button>`:'<span style="margin-left:8px;">✓ Calificado</span>'}</div></div>`;}).join('')}</div></div>`; 
+        }
+        
+        function renderViajePasajero(v) { 
+            const r = obtenerReserva(v.id, sesionActual.id); 
+            const c = usuarios.find(u=>u.id===v.conductorId); 
+            const fecha = new Date(v.fecha).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}); 
+            const yaC = yaCalifico(sesionActual.id, v.conductorId, v.id, 'pasajero_a_conductor'); 
+            return `<div class="trip-card"><div><strong>${v.origen} → ${v.destino}</strong><span class="${r?.estado==='completado'?'estado-completado':'estado-pendiente'}" style="margin-left:12px;">${r?.estado==='completado'?'Completado':'Pendiente'}</span></div><div style="font-size:0.75rem;color:#6b7280;">${fecha} ${v.hora||''}</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;"><div><div class="driver" data-conductor-id="${v.conductorId}" style="cursor:pointer;">${renderizarAvatar(c?.avatar,'small')} ${v.conductorNombre}</div></div>${r?.estado==='pendiente'?`<div style="background:#dbeafe;padding:8px 12px;border-radius:12px;">Código: ${r.codigo}<button class="copy-codigo" data-codigo="${r.codigo}" style="margin-left:8px;background:none;border:none;"><i class="fas fa-copy"></i></button></div>`:(!yaC?`<button class="calificar-btn" data-usuario="${v.conductorId}" data-viaje="${v.id}" data-nombre="${v.conductorNombre}" data-tipo="pasajero_a_conductor" style="background:#f59e0b;color:white;border:none;padding:8px 16px;border-radius:40px;">⭐ Calificar conductor</button>`:'<span>✓ Calificado</span>')}</div></div>`; 
+        }
+
+        function renderLogros() { 
+            const insignias = calcularInsignias(sesionActual); 
+            const viajesCond = reservas.filter(r=>{const v=viajes.find(vv=>vv.id===r.viajeId); return v&&v.conductorId===sesionActual.id&&r.estado==='completado';}).length;
+            const viajesPas = reservas.filter(r=>r.pasajeroId===sesionActual.id&&r.estado==='completado').length;
+            const califProm = obtenerCalificacionPromedio(sesionActual.id).toFixed(1);
+            return `<button class="btn-back" id="backToHomeBtn"><i class="fas fa-arrow-left"></i> Volver</button><div class="card"><div class="card-title"><i class="fas fa-trophy"></i><span>Mis Logros</span></div><div class="stats-grid"><div class="stat-card"><div class="stat-number">${viajesCond}</div><div class="stat-label">Viajes conductor</div></div><div class="stat-card"><div class="stat-number">${viajesPas}</div><div class="stat-label">Viajes pasajero</div></div><div class="stat-card"><div class="stat-number">${califProm}</div><div class="stat-label">⭐ Calificación</div></div></div><div class="badges-container">${insignias.length===0?'<div class="empty-state">Sin insignias aún</div>':insignias.map(i=>`<div class="badge-item ${i.color}"><i class="fas ${i.icono}"></i> ${i.nombre}</div>`).join('')}</div></div>`; 
+        }
+
+        function renderPublicarViaje() { 
+            const hoy = new Date().toISOString().split('T')[0]; 
+            return `<button class="btn-back" id="backToHomeBtn"><i class="fas fa-arrow-left"></i> Volver</button><div class="card"><div class="card-title"><i class="fas fa-plus-circle"></i><span>Publicar viaje</span></div><form id="publicarForm"><div class="form-group" id="origenGroup"><label>Origen</label><div class="input-icon"><i class="fas fa-circle-dot"></i><input type="text" id="origen" placeholder="Ciudad de Perú" required autocomplete="off"></div><div id="origenSuggestions" class="autocomplete-suggestions"></div></div><div class="form-group" id="destinoGroup"><label>Destino</label><div class="input-icon"><i class="fas fa-flag-checkered"></i><input type="text" id="destino" placeholder="Ciudad de Perú" required autocomplete="off"></div><div id="destinoSuggestions" class="autocomplete-suggestions"></div></div><div class="row-2cols"><div class="form-group"><label>Fecha</label><input type="date" id="fecha" min="${hoy}" required></div><div class="form-group"><label>Hora</label><input type="time" id="hora" required></div></div><div class="row-2cols"><div class="form-group"><label>Plazas</label><input type="number" id="plazas" min="1" max="8" value="3" required></div><div class="form-group"><label>Precio (S/.)</label><input type="number" id="precio" min="0" step="1" required></div></div><button type="submit" class="btn-primary">Publicar viaje</button></form></div>`; 
+        }
+
+        function renderMiPerfil() { 
+            return `<button class="btn-back" id="backToHomeBtn"><i class="fas fa-arrow-left"></i> Volver</button><div class="card"><div style="text-align:center;">${renderizarAvatar(sesionActual.avatar,'large')}<h2>${sesionActual.nombre}</h2><p>${sesionActual.email}</p><p>${sesionActual.telefono}</p><div class="stars" style="justify-content:center;">${renderStars(obtenerCalificacionPromedio(sesionActual.id))}</div></div><button class="btn-primary" id="editarPerfilBtn">Editar perfil</button></div>`; 
+        }
+
+        function renderPerfilPublico() { 
+            const u = usuarios.find(us=>us.id===perfilViewId); 
+            if(!u) return '<div class="card">Usuario no encontrado</div>'; 
+            const insignias = calcularInsignias(u); 
+            return `<button class="btn-back" id="backToHomeBtn"><i class="fas fa-arrow-left"></i> Volver</button><div class="card"><div style="text-align:center;">${renderizarAvatar(u.avatar,'large')}<h2>${u.nombre}</h2><div class="stars" style="justify-content:center;">${renderStars(obtenerCalificacionPromedio(u.id))}</div><p>${u.telefono||'Sin teléfono'}</p></div><div class="badges-container">${insignias.map(i=>`<div class="badge-item ${i.color}"><i class="fas ${i.icono}"></i> ${i.nombre}</div>`).join('')}</div><button class="btn-primary" id="contactarBtn" data-id="${u.id}">Enviar mensaje</button></div>`; 
+        }
+
+        // ============ MODAL CALIFICACIÓN ============
+        let currentRatingCallback = null;
+        
+        function abrirModalCalificacion(receptorId, viajeId, tipo, nombre) { 
+            const modal = document.getElementById('ratingModal'); 
+            document.getElementById('modalTitle').innerHTML = `Calificar a ${nombre}`; 
+            document.getElementById('comentario').value = ''; 
+            document.querySelectorAll('#modalStars i').forEach(s=>s.className='far fa-star'); 
+            modal.style.display = 'flex'; 
+            let rating = 0; 
+            document.querySelectorAll('#modalStars i').forEach(s=>{ 
+                s.onclick = () => { 
+                    rating = parseInt(s.dataset.rating); 
+                    document.querySelectorAll('#modalStars i').forEach((ss,i)=>{ 
+                        if(i < rating) ss.className = 'fas fa-star'; 
+                        else ss.className = 'far fa-star'; 
+                    }); 
+                }; 
+            }); 
+            document.getElementById('enviarCalificacionBtn').onclick = () => { 
+                if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } 
+                agregarCalificacion(sesionActual.id, receptorId, tipo, rating, document.getElementById('comentario').value, viajeId); 
+                mostrarToast(`Calificaste a ${nombre} con ${rating} estrellas`, '#10b981'); 
+                cerrarModal(); 
+                renderApp(); 
+            }; 
+        }
+        
+        function cerrarModal() { document.getElementById('ratingModal').style.display = 'none'; }
+
+        // ============ EVENTOS ============
+        function setupLoginEvents() { 
+            document.getElementById('showLoginBtn')?.addEventListener('click',()=>{document.getElementById('loginPanel').style.display='block';document.getElementById('registerPanel').style.display='none';}); 
+            document.getElementById('showRegisterBtn')?.addEventListener('click',()=>{document.getElementById('loginPanel').style.display='none';document.getElementById('registerPanel').style.display='block';}); 
+            document.getElementById('doLoginBtn')?.addEventListener('click',()=>{const e=document.getElementById('loginEmail')?.value, p=document.getElementById('loginPassword')?.value; const u=usuarios.find(us=>us.email===e && us.password===p); if(u){guardarSesion(u);mostrarToast(`Bienvenido ${u.nombre}`,'#10b981');renderApp();}else mostrarToast('Credenciales incorrectas','#ef4444');}); 
+            document.getElementById('doRegisterBtn')?.addEventListener('click',()=>{const n=document.getElementById('regNombre')?.value, e=document.getElementById('regEmail')?.value, t=document.getElementById('regTelefono')?.value, p=document.getElementById('regPassword')?.value, c=document.getElementById('regConfirmPassword')?.value; if(!n||!e||!t||!p){mostrarToast('Complete todos','#ef4444');return;} if(!validarEmail(e)){mostrarToast('Email inválido','#ef4444');return;} if(emailExiste(e)){mostrarToast('Email ya registrado','#ef4444');return;} if(p.length<6){mostrarToast('Mínimo 6 caracteres','#ef4444');return;} if(p!==c){mostrarToast('Contraseñas no coinciden','#ef4444');return;} const nuevo={id:Date.now(),nombre:n,email:e,password:p,telefono:t,verificado:false,vehiculo:null,avatar:{tipo:'color',color:'#2563eb',icono:'fas fa-user'}}; usuarios.push(nuevo);guardarUsuarios();mostrarToast('Cuenta creada','#10b981');document.getElementById('showLoginBtn')?.click();}); 
+        }
+
+        function setupHomeEvents() { 
+            document.getElementById('logoutBtn')?.addEventListener('click',()=>cerrarSesion()); 
+            document.getElementById('misViajesBtn')?.addEventListener('click',()=>{vistaActual='misViajes';misViajesTab='conductor';renderApp();}); 
+            document.getElementById('logrosBtn')?.addEventListener('click',()=>{vistaActual='logros';renderApp();}); 
+            document.getElementById('publicarViajeBtn')?.addEventListener('click',()=>{vistaActual='publicarViaje';renderApp();setTimeout(()=>{setupAutocomplete('origen');setupAutocomplete('destino');},100);}); 
+            document.getElementById('miPerfilBtn')?.addEventListener('click',()=>{vistaActual='miPerfil';renderApp();}); 
+            document.getElementById('goHomeBtn')?.addEventListener('click',()=>{vistaActual='home';renderApp();}); 
+            document.querySelectorAll('.btn-reserve').forEach(b=>{b.addEventListener('click',(e)=>{e.stopPropagation();reservarViaje(parseInt(b.dataset.viajeId));renderApp();});}); 
+            document.querySelectorAll('.driver').forEach(d=>{d.addEventListener('click',(e)=>{e.stopPropagation();const id=parseInt(d.dataset.conductorId);if(id){perfilViewId=id;vistaActual='perfilPublico';renderApp();}});}); 
+        }
+
+        function setupMisViajesEvents() { 
+            document.getElementById('backToHomeBtn')?.addEventListener('click',()=>{vistaActual='home';renderApp();}); 
+            document.querySelectorAll('.mis-viajes-tab').forEach(t=>{t.addEventListener('click',()=>{misViajesTab=t.dataset.tab;renderApp();});}); 
+            document.querySelectorAll('.verificar-codigo').forEach(b=>{b.addEventListener('click',()=>{const viajeId=parseInt(b.dataset.viaje), pasajeroId=parseInt(b.dataset.pasajero); const cod=prompt('Ingrese el código de 6 dígitos del pasajero:'); if(cod?.length===6){const r=validarCodigo(viajeId,pasajeroId,cod);mostrarToast(r.mensaje,r.valido?'#10b981':'#ef4444');if(r.valido)renderApp();} else if(cod) mostrarToast('Código debe tener 6 dígitos','#ef4444');});}); 
+            document.querySelectorAll('.calificar-btn').forEach(b=>{b.addEventListener('click',()=>{const receptorId=parseInt(b.dataset.usuario), viajeId=parseInt(b.dataset.viaje), tipo=b.dataset.tipo, nombre=b.dataset.nombre; abrirModalCalificacion(receptorId,viajeId,tipo,nombre);});}); 
+            document.querySelectorAll('.copy-codigo').forEach(b=>{b.addEventListener('click',()=>{navigator.clipboard.writeText(b.dataset.codigo);mostrarToast('Código copiado','#10b981');});}); 
+        }
+
+        function setupLogrosEvents() { document.getElementById('backToHomeBtn')?.addEventListener('click',()=>{vistaActual='home';renderApp();}); }
+        
+        function setupPublicarViajeEvents() { 
+            document.getElementById('backToHomeBtn')?.addEventListener('click',()=>{vistaActual='home';renderApp();}); 
+            document.getElementById('publicarForm')?.addEventListener('submit',(e)=>{e.preventDefault(); const nuevo={id:Date.now(),conductorId:sesionActual.id,conductorNombre:sesionActual.nombre,origen:document.getElementById('origen').value,destino:document.getElementById('destino').value,fecha:document.getElementById('fecha').value,hora:document.getElementById('hora').value,plazasOriginal:parseInt(document.getElementById('plazas').value),plazasReservadas:0,precio:parseInt(document.getElementById('precio').value)}; viajes.push(nuevo);guardarViajes();mostrarToast('Viaje publicado','#10b981');vistaActual='home';renderApp();}); 
+        }
+
+        function setupMiPerfilEvents() { 
+            document.getElementById('backToHomeBtn')?.addEventListener('click',()=>{vistaActual='home';renderApp();}); 
+            document.getElementById('editarPerfilBtn')?.addEventListener('click',()=>mostrarToast('Próximamente','#f59e0b')); 
+        }
+
+        function setupPerfilPublicoEvents() { 
+            document.getElementById('backToHomeBtn')?.addEventListener('click',()=>{vistaActual='home';perfilViewId=null;renderApp();}); 
+            document.getElementById('contactarBtn')?.addEventListener('click',()=>{mostrarToast('Función de chat próximamente','#f59e0b');}); 
+        }
+
+        // ============ DATOS EJEMPLO ============
+        function inicializarEjemplo() { 
+            if(usuarios.length === 0){ 
+                usuarios.push({id:1,nombre:"Carlos Mendoza",email:"carlos@rideshare.pe",password:"123456",telefono:"987654321",verificado:true,vehiculo:{placa:"ABC-123",marca:"Toyota",modelo:"Yaris",anio:2020,color:"Rojo"},avatar:{tipo:'color',color:'#2563eb',icono:'fas fa-user'}}); 
+                usuarios.push({id:2,nombre:"Ana Guevara",email:"ana@rideshare.pe",password:"123456",telefono:"976543210",verificado:true,vehiculo:{placa:"XYZ-789",marca:"Hyundai",modelo:"Accent",anio:2021,color:"Blanco"},avatar:{tipo:'color',color:'#10b981',icono:'fas fa-user-astronaut'}}); 
+                const manana=new Date(); manana.setDate(manana.getDate()+1); 
+                viajes.push({id:101,conductorId:1,conductorNombre:"Carlos Mendoza",origen:"Lima",destino:"Arequipa",fecha:manana.toISOString().split('T')[0],hora:"08:00",plazasOriginal:4,plazasReservadas:0,precio:80}); 
+                viajes.push({id:102,conductorId:2,conductorNombre:"Ana Guevara",origen:"Arequipa",destino:"Puno",fecha:manana.toISOString().split('T')[0],hora:"14:30",plazasOriginal:4,plazasReservadas:0,precio:45}); 
+                guardarUsuarios(); guardarViajes(); 
+            } 
+        }
+
+        // ============ MODO OSCURO ============
+        function setupDarkMode() { 
+            const toggle=document.getElementById('themeToggle'); 
+            if(toggle){toggle.addEventListener('click',()=>{document.body.classList.toggle('dark');const dark=document.body.classList.contains('dark');toggle.innerHTML=dark?'<i class="fas fa-sun"></i><span>Modo claro</span>':'<i class="fas fa-moon"></i><span>Modo oscuro</span>';localStorage.setItem('darkMode',dark);});} 
+            if(localStorage.getItem('darkMode')==='true'){document.body.classList.add('dark');const t=document.getElementById('themeToggle');if(t)t.innerHTML='<i class="fas fa-sun"></i><span>Modo claro</span>';} 
+        }
+
+        // ============ INICIALIZAR ============
+        cargarDatos();
+        inicializarEjemplo();
+        cargarSesion();
+        renderApp();
+        setupDarkMode();
+        
+        window.compartirViajeWhatsApp = compartirViajeWhatsApp;
+        window.cerrarModal = cerrarModal;
+        window.seleccionarCiudad = seleccionarCiudad;
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>RideShare Perú - Carpooling moderno</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBS9ZlKuJHaN6jT5FSmTExHZHzIdxYAno",
+            authDomain: "rideshareperu.firebaseapp.com",
+            projectId: "rideshareperu",
+            storageBucket: "rideshareperu.firebasestorage.app",
+            messagingSenderId: "53229848342",
+            appId: "1:53229848342:web:52f2b0bed05db53bd07237",
+            measurementId: "G-1TZWNQN4S2"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Exponer Firebase globalmente para usar en el resto del código
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.updateDoc = updateDoc;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.query = query;
+        window.where = where;
+        window.orderBy = orderBy;
+        window.onSnapshot = onSnapshot;
+        
+        console.log("✅ Firebase conectado correctamente");
+    </script>
+    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', sans-serif; background: #f3f4f6; transition: background 0.3s, color 0.3s; }
@@ -80,7 +678,7 @@
         .trip-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
         .price { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
         .price small { font-size: 0.8rem; font-weight: normal; color: #6b7280; }
-        .trip-actions { display: flex; gap: 8px; align-items: center; }
+        .trip-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .btn-reserve { background: #2563eb; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
         .btn-reserve:hover { background: #1d4ed8; transform: scale(1.02); }
         .btn-edit { background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
@@ -117,6 +715,8 @@
         .stat-mini { text-align: center; }
         .stat-mini-value { font-size: 1.2rem; font-weight: 700; color: #2563eb; }
         .stat-mini-label { font-size: 0.7rem; color: #6b7280; }
+        .loading-spinner { text-align: center; padding: 40px; }
+        .loading-spinner i { font-size: 2rem; color: #2563eb; }
     </style>
 </head>
 <body>
@@ -158,7 +758,7 @@
             <div class="card">
                 <div class="card-title"><i class="fas fa-list-ul"></i><span>Viajes disponibles en Perú</span></div>
                 <div class="filter-section"><div class="filter-row"><input type="text" id="filtroOrigen" placeholder="🔍 Filtrar por origen..."><input type="text" id="filtroDestino" placeholder="🎯 Filtrar por destino..."><input type="date" id="filtroFecha" placeholder="📅 Fecha"></div></div>
-                <div id="listaViajes" class="trips-list"><div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes publicados</p><small>¡Comparte tu coche y empieza a viajar por Perú!</small></div></div>
+                <div id="listaViajes" class="trips-list"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p>Cargando viajes...</p></div></div>
             </div>
         </div>
     </div>
@@ -177,6 +777,8 @@
         const ciudadesPeru = ["Lima","Arequipa","Trujillo","Chiclayo","Piura","Cusco","Iquitos","Huancayo","Chimbote","Pucallpa","Tacna","Ica","Juliaca","Sullana","Cajamarca","Ayacucho","Chincha Alta","Huánuco","Tarapoto","Puno","Tumbes","Huaraz","Moquegua","Pisco","Jaén","Barranca","Talara","Abancay","Moyobamba","Puerto Maldonado","Cerro de Pasco","Huacho","Chepén","Huamanga","Andahuaylas","Camaná","Lambayeque","Nazca","Paita","Sechura","Yurimaguas","Bagua Grande","Tingo María","Chachapoyas","San Vicente de Cañete","Imperial","Huaura","Chosica","Mala","Matucana","Canta","Corongo","Huari","Caraz"];
         let searchCache = new Map();
         let currentTimeout = null;
+        let viajesGlobales = [];
+        let unsubscribeViajes = null;
 
         async function buscarCiudadesPeru(query, inputId) {
             const suggestionsDiv = document.getElementById(inputId + 'Suggestions');
@@ -217,54 +819,135 @@
         function generarOSMLink(origen, destino) { return `https://www.openstreetmap.org/directions?engine=graphhopper_foot&route=${encodeURIComponent(origen)}, Perú&to=${encodeURIComponent(destino)}, Perú`; }
         
         // ============ DATOS GLOBALES ============
-        let viajes = [];
         let calificaciones = {};
         let calificacionesPasajeros = {};
         let usuarioActual = null;
-        let reservasPendientes = 0;
 
-        // ============ FUNCIONES DE CÓDIGO ============
+        // ============ FUNCIONES ============
         function generarCodigoConfirmacion() { return Math.floor(100000 + Math.random() * 900000).toString(); }
         
-        // ============ CALIFICACIONES ============
-        function cargarCalificacionesPasajeros() { const g = localStorage.getItem('calificacionesPasajeros'); if(g) calificacionesPasajeros = JSON.parse(g); }
-        function guardarCalificacionesPasajeros() { localStorage.setItem('calificacionesPasajeros', JSON.stringify(calificacionesPasajeros)); }
-        function yaCalificoPasajero(conductorNombre, pasajeroNombre, viajeId) { return calificacionesPasajeros[`${conductorNombre}_${pasajeroNombre}_${viajeId}`] !== undefined; }
-        function calificarPasajero(conductorNombre, pasajeroNombre, viajeId, puntaje) { calificacionesPasajeros[`${conductorNombre}_${pasajeroNombre}_${viajeId}`] = { puntaje, fecha: new Date().toISOString() }; guardarCalificacionesPasajeros(); mostrarToast(`⭐ Calificaste a ${pasajeroNombre} con ${puntaje} estrellas`, '#10b981'); }
-        function obtenerCalificacionConductor(conductorNombre) { const calif = calificaciones[conductorNombre]; if(!calif || calif.length === 0) return 0; const suma = calif.reduce((a,b) => a + b, 0); return suma / calif.length; }
-        function renderStars(rating) { let stars = ''; for(let i=1;i<=5;i++) stars += i<=Math.round(rating) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; return stars; }
-        
-        // ============ INSIGNIAS ============
-        function calcularInsignias(usuario) {
-            const insignias = [];
-            const viajesConductor = viajes.filter(v => v.conductor === usuario.nombre && v.completado === true).length;
-            const viajesPasajero = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuario.nombre) && v.completado === true).length;
-            const ratingConductor = obtenerCalificacionConductor(usuario.nombre);
-            if(viajesConductor >= 1) insignias.push({ nombre: '🚗 Primer Viaje', descripcion: 'Completaste tu primer viaje', color: 'bronce' });
-            if(viajesPasajero >= 5) insignias.push({ nombre: '🌟 Viajero Frecuente', descripcion: 'Realizaste 5 viajes como pasajero', color: 'plata' });
-            if(ratingConductor > 4.5) insignias.push({ nombre: '⭐ Conductor Estrella', descripcion: 'Calificación > 4.5', color: 'oro' });
-            if(viajesConductor >= 10) insignias.push({ nombre: '🏆 Super Conductor', descripcion: '10 viajes como conductor', color: 'platino' });
-            return insignias;
-        }
-        
-        // ============ FUNCIONES DE VIAJES ============
-        function actualizarBadgePendientes() {
-            const badge = document.getElementById('pendientesBadge');
-            const pendientes = viajes.filter(v => v.conductor === usuarioActual?.nombre && v.codigosPendientes && v.codigosPendientes.length > 0).length;
-            if(badge) { if(pendientes > 0) { badge.style.display = 'inline-block'; badge.textContent = pendientes; } else badge.style.display = 'none'; }
-        }
-        
-        function guardarViajes() { localStorage.setItem('rideshares', JSON.stringify(viajes)); }
         function guardarCalificaciones() { localStorage.setItem('ratings', JSON.stringify(calificaciones)); }
+        function guardarCalificacionesPasajeros() { localStorage.setItem('calificacionesPasajeros', JSON.stringify(calificacionesPasajeros)); }
         
-        function cargarDatos() {
-            const guardados = localStorage.getItem('rideshares');
-            if(guardados) { viajes = JSON.parse(guardados); viajes.forEach(v => { if(!v.pasajeros) v.pasajeros = []; if(v.plazasReservadas === undefined) v.plazasReservadas = 0; if(v.plazasOriginal === undefined) v.plazasOriginal = v.plazas; if(!v.codigos) v.codigos = {}; if(!v.codigosPendientes) v.codigosPendientes = []; }); }
+        function cargarCalificacionesLocales() {
             const califGuardadas = localStorage.getItem('ratings');
             if(califGuardadas) calificaciones = JSON.parse(califGuardadas);
-            cargarCalificacionesPasajeros();
-            aplicarFiltros();
-            actualizarBadgePendientes();
+            const califPasajeros = localStorage.getItem('calificacionesPasajeros');
+            if(califPasajeros) calificacionesPasajeros = JSON.parse(califPasajeros);
+        }
+        
+        function obtenerCalificacionConductor(conductorNombre) { 
+            const calif = calificaciones[conductorNombre]; 
+            if(!calif || calif.length === 0) return 0; 
+            const suma = calif.reduce((a,b) => a + b, 0); 
+            return suma / calif.length; 
+        }
+        
+        function renderStars(rating) { 
+            let stars = ''; 
+            for(let i=1;i<=5;i++) stars += i<=Math.round(rating) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; 
+            return stars; 
+        }
+        
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        
+        function mostrarToast(m, c='#1f2937') { 
+            const t = document.getElementById('toast'); 
+            t.style.display = 'flex'; 
+            t.style.background = c; 
+            t.innerHTML = `<i class="fas ${c==='#10b981'?'fa-check-circle':(c==='#ef4444'?'fa-exclamation-circle':'fa-info-circle')}"></i> ${m}`; 
+            t.style.animation = 'slideUp 0.3s ease'; 
+            setTimeout(() => t.style.display = 'none', 4000); 
+        }
+        
+        // ============ FUNCIONES DE VIAJES CON FIREBASE ============
+        async function cargarViajesFirebase() {
+            if (!window.db) {
+                mostrarToast("⏳ Esperando conexión a Firebase...", "#f59e0b");
+                setTimeout(() => cargarViajesFirebase(), 1000);
+                return;
+            }
+            
+            try {
+                const q = query(collection(window.db, "viajes"), orderBy("fecha", "asc"));
+                
+                if (unsubscribeViajes) unsubscribeViajes();
+                
+                unsubscribeViajes = onSnapshot(q, (snapshot) => {
+                    viajesGlobales = [];
+                    snapshot.forEach(doc => {
+                        viajesGlobales.push({ id: doc.id, ...doc.data() });
+                    });
+                    aplicarFiltros();
+                    actualizarBadgePendientes();
+                    console.log("✅ Viajes actualizados desde Firebase:", viajesGlobales.length);
+                }, (error) => {
+                    console.error("Error en snapshot:", error);
+                    mostrarToast("Error al cargar viajes", "#ef4444");
+                });
+            } catch (error) {
+                console.error("Error cargando viajes:", error);
+                mostrarToast("Error al conectar con la base de datos", "#ef4444");
+            }
+        }
+        
+        async function publicarViajeFirebase(viajeData) {
+            if (!window.db) throw new Error("Firebase no disponible");
+            const docRef = await addDoc(collection(window.db, "viajes"), viajeData);
+            return docRef.id;
+        }
+        
+        async function actualizarViajeFirebase(viajeId, datos) {
+            if (!window.db) throw new Error("Firebase no disponible");
+            const docRef = doc(window.db, "viajes", viajeId);
+            await updateDoc(docRef, datos);
+        }
+        
+        async function eliminarViajeFirebase(viajeId) {
+            if (!window.db) throw new Error("Firebase no disponible");
+            const docRef = doc(window.db, "viajes", viajeId);
+            await deleteDoc(docRef);
+        }
+        
+        async function reservarViajeFirebase(viajeId, viajeActual, pasajeroNombre) {
+            if (!window.db) throw new Error("Firebase no disponible");
+            const codigo = generarCodigoConfirmacion();
+            const nuevosPasajeros = [...(viajeActual.pasajeros || []), pasajeroNombre];
+            const nuevosCodigos = { ...(viajeActual.codigos || {}), [pasajeroNombre]: codigo };
+            const nuevosCodigosPendientes = [...(viajeActual.codigosPendientes || []), pasajeroNombre];
+            
+            const docRef = doc(window.db, "viajes", viajeId);
+            await updateDoc(docRef, {
+                plazasReservadas: (viajeActual.plazasReservadas || 0) + 1,
+                plazas: viajeActual.plazasOriginal - ((viajeActual.plazasReservadas || 0) + 1),
+                pasajeros: nuevosPasajeros,
+                codigos: nuevosCodigos,
+                codigosPendientes: nuevosCodigosPendientes
+            });
+            return codigo;
+        }
+        
+        async function completarViajeFirebase(viajeId, pasajeroNombre, codigoIngresado, viajeActual) {
+            if (!window.db) throw new Error("Firebase no disponible");
+            const codigoCorrecto = viajeActual.codigos?.[pasajeroNombre];
+            if (codigoIngresado === codigoCorrecto) {
+                const nuevosPendientes = (viajeActual.codigosPendientes || []).filter(p => p !== pasajeroNombre);
+                const docRef = doc(window.db, "viajes", viajeId);
+                await updateDoc(docRef, {
+                    codigosPendientes: nuevosPendientes,
+                    completado: true
+                });
+                return true;
+            }
+            return false;
+        }
+        
+        // ============ INTERFAZ DE USUARIO ============
+        function actualizarBadgePendientes() {
+            const badge = document.getElementById('pendientesBadge');
+            if (!usuarioActual) { if(badge) badge.style.display = 'none'; return; }
+            const pendientes = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre && v.codigosPendientes && v.codigosPendientes.length > 0).length;
+            if(badge) { if(pendientes > 0) { badge.style.display = 'inline-block'; badge.textContent = pendientes; } else badge.style.display = 'none'; }
         }
         
         function validarFecha(fecha) { const hoy = new Date(); hoy.setHours(0,0,0,0); return new Date(fecha) >= hoy; }
@@ -272,28 +955,29 @@
         document.getElementById('fecha').min = hoyDate;
         document.getElementById('filtroFecha').min = hoyDate;
         
-        // ============ FILTROS ============
         function aplicarFiltros() {
             const filtroOrigen = document.getElementById('filtroOrigen').value.toLowerCase();
             const filtroDestino = document.getElementById('filtroDestino').value.toLowerCase();
             const filtroFecha = document.getElementById('filtroFecha').value;
-            let filtrados = [...viajes];
+            let filtrados = [...viajesGlobales];
             if(filtroOrigen) filtrados = filtrados.filter(v => v.origen.toLowerCase().includes(filtroOrigen));
             if(filtroDestino) filtrados = filtrados.filter(v => v.destino.toLowerCase().includes(filtroDestino));
             if(filtroFecha) filtrados = filtrados.filter(v => v.fecha === filtroFecha);
             filtrados.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
             mostrarViajes(filtrados);
         }
+        
         document.getElementById('filtroOrigen').addEventListener('input', aplicarFiltros);
         document.getElementById('filtroDestino').addEventListener('input', aplicarFiltros);
         document.getElementById('filtroFecha').addEventListener('change', aplicarFiltros);
         
-        function mostrarViajes(viajesMostrar = null) {
+        function mostrarViajes(lista) {
             const contenedor = document.getElementById('listaViajes');
-            const lista = viajesMostrar || viajes;
-            if(lista.length === 0) { contenedor.innerHTML = `<div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes publicados</p><small>¡Comparte tu coche y empieza a viajar por Perú!</small></div>`; return; }
-            contenedor.innerHTML = lista.map((viaje, idx) => {
-                const indexReal = viajes.findIndex(v => v.id === viaje.id);
+            if(!lista || lista.length === 0) { 
+                contenedor.innerHTML = `<div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes publicados</p><small>¡Comparte tu coche y empieza a viajar por Perú!</small></div>`; 
+                return; 
+            }
+            contenedor.innerHTML = lista.map((viaje) => {
                 const fechaObj = new Date(viaje.fecha);
                 const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
                 const iniciales = viaje.conductor.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
@@ -301,135 +985,191 @@
                 const esPropietario = usuarioActual && viaje.conductor === usuarioActual.nombre;
                 const plazasRestantes = viaje.plazasOriginal - (viaje.plazasReservadas || 0);
                 const osmLink = generarOSMLink(viaje.origen, viaje.destino);
-                return `<div class="trip-card" onclick="abrirModal(${indexReal})">${esPropietario ? '<div class="badge-owned">Tú eres el conductor</div>' : ''}<div class="trip-header"><div class="driver" data-conductor="${viaje.conductor}"><div class="driver-avatar">${escapeHtml(iniciales)}</div><div class="driver-info"><h4>${escapeHtml(viaje.conductor)}</h4><div class="stars">${renderStars(rating)}</div><span>${rating > 0 ? rating.toFixed(1) + ' ★' : 'Sin reseñas'}</span></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazasRestantes} / ${viaje.plazasOriginal} plazas</div></div><div class="trip-route"><div class="route-point"><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong>${escapeHtml(viaje.origen)}</strong><a href="${osmLink}" target="_blank" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt"></i> Ver ruta</a></div><div class="route-point"><i class="fas fa-arrow-down" style="color:#9ca3af;"></i><strong>${escapeHtml(viaje.destino)}</strong></div></div><div class="trip-footer"><div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i><span style="font-size:0.85rem;">${fechaFormateada} ${viaje.hora ? `• ${viaje.hora}` : ''}</span></div><div class="price">S/ ${viaje.precio}<small> por persona</small></div></div><div class="trip-actions">${!esPropietario && plazasRestantes > 0 ? `<button class="btn-reserve" onclick="event.stopPropagation(); reservarViaje(${indexReal})"><i class="fas fa-check-circle"></i> Reservar</button>` : ''}<button class="btn-whatsapp-share" onclick="event.stopPropagation(); compartirWhatsApp(${JSON.stringify(viaje).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i></button>${esPropietario ? `<button class="btn-edit" onclick="event.stopPropagation(); editarViaje(${indexReal})"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="event.stopPropagation(); eliminarViaje(${indexReal})"><i class="fas fa-trash"></i></button>` : ''}</div></div></div>`;
+                return `<div class="trip-card" onclick="abrirModal('${viaje.id}')">${esPropietario ? '<div class="badge-owned">Tú eres el conductor</div>' : ''}<div class="trip-header"><div class="driver" data-conductor="${viaje.conductor}"><div class="driver-avatar">${escapeHtml(iniciales)}</div><div class="driver-info"><h4>${escapeHtml(viaje.conductor)}</h4><div class="stars">${renderStars(rating)}</div><span>${rating > 0 ? rating.toFixed(1) + ' ★' : 'Sin reseñas'}</span></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazasRestantes} / ${viaje.plazasOriginal} plazas</div></div><div class="trip-route"><div class="route-point"><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong>${escapeHtml(viaje.origen)}</strong><a href="${osmLink}" target="_blank" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt"></i> Ver ruta</a></div><div class="route-point"><i class="fas fa-arrow-down" style="color:#9ca3af;"></i><strong>${escapeHtml(viaje.destino)}</strong></div></div><div class="trip-footer"><div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i><span style="font-size:0.85rem;">${fechaFormateada} ${viaje.hora ? `• ${viaje.hora}` : ''}</span></div><div class="price">S/ ${viaje.precio}<small> por persona</small></div></div><div class="trip-actions">${!esPropietario && plazasRestantes > 0 ? `<button class="btn-reserve" onclick="event.stopPropagation(); reservarViaje('${viaje.id}')"><i class="fas fa-check-circle"></i> Reservar</button>` : ''}<button class="btn-whatsapp-share" onclick="event.stopPropagation(); compartirWhatsApp(${JSON.stringify(viaje).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i></button>${esPropietario ? `<button class="btn-edit" onclick="event.stopPropagation(); editarViaje('${viaje.id}')"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="event.stopPropagation(); eliminarViaje('${viaje.id}')"><i class="fas fa-trash"></i></button>` : ''}</div></div></div>`;
             }).join('');
         }
         
-        // ============ CRUD ============
-        document.getElementById('formViaje').addEventListener('submit', function(e) {
+        // ============ CRUD CON FIREBASE ============
+        document.getElementById('formViaje').addEventListener('submit', async function(e) {
             e.preventDefault();
             if(!usuarioActual) { mostrarToast('❌ Primero inicia sesión', '#ef4444'); return; }
             const fecha = document.getElementById('fecha').value;
             if(!validarFecha(fecha)) { mostrarToast('❌ No se pueden publicar viajes con fecha pasada', '#ef4444'); return; }
-            const nuevoViaje = { id: Date.now(), conductor: usuarioActual.nombre, origen: document.getElementById('origen').value.trim(), destino: document.getElementById('destino').value.trim(), fecha: fecha, hora: document.getElementById('hora').value, plazasOriginal: parseInt(document.getElementById('plazas').value), plazasReservadas: 0, plazas: parseInt(document.getElementById('plazas').value), precio: parseInt(document.getElementById('precio').value), pasajeros: [], codigos: {}, codigosPendientes: [], fechaPublicacion: new Date().toISOString() };
+            const nuevoViaje = {
+                conductor: usuarioActual.nombre,
+                origen: document.getElementById('origen').value.trim(),
+                destino: document.getElementById('destino').value.trim(),
+                fecha: fecha,
+                hora: document.getElementById('hora').value,
+                plazasOriginal: parseInt(document.getElementById('plazas').value),
+                plazasReservadas: 0,
+                plazas: parseInt(document.getElementById('plazas').value),
+                precio: parseInt(document.getElementById('precio').value),
+                pasajeros: [],
+                codigos: {},
+                codigosPendientes: [],
+                fechaPublicacion: new Date().toISOString()
+            };
             if(!nuevoViaje.origen || !nuevoViaje.destino || !nuevoViaje.fecha) { mostrarToast('❌ Completa todos los campos', '#ef4444'); return; }
-            viajes.push(nuevoViaje); guardarViajes(); aplicarFiltros(); this.reset(); document.getElementById('plazas').value = '3'; document.getElementById('fecha').min = hoyDate; mostrarToast(`✅ ¡Viaje publicado! ${nuevoViaje.origen} → ${nuevoViaje.destino}`, '#10b981');
+            try {
+                await publicarViajeFirebase(nuevoViaje);
+                mostrarToast(`✅ ¡Viaje publicado! ${nuevoViaje.origen} → ${nuevoViaje.destino}`, '#10b981');
+                document.getElementById('formViaje').reset();
+                document.getElementById('plazas').value = '3';
+                document.getElementById('fecha').min = hoyDate;
+            } catch(error) {
+                mostrarToast('❌ Error al publicar viaje', '#ef4444');
+                console.error(error);
+            }
         });
         
-        function reservarViaje(index) {
+        async function reservarViaje(viajeId) {
             if(!usuarioActual) { mostrarToast('❌ Inicia sesión para reservar', '#ef4444'); return; }
-            const viaje = viajes[index];
-            if(viaje && viaje.plazasReservadas < viaje.plazasOriginal) {
-                const codigo = generarCodigoConfirmacion();
-                viaje.plazasReservadas++;
-                viaje.plazas = viaje.plazasOriginal - viaje.plazasReservadas;
-                if(!viaje.pasajeros) viaje.pasajeros = [];
-                viaje.pasajeros.push(usuarioActual.nombre);
-                viaje.codigos[usuarioActual.nombre] = codigo;
-                if(!viaje.codigosPendientes) viaje.codigosPendientes = [];
-                viaje.codigosPendientes.push(usuarioActual.nombre);
-                guardarViajes();
-                aplicarFiltros();
-                actualizarBadgePendientes();
-                mostrarToast(`🎉 ¡Reserva confirmada! Tu código es: ${codigo}. Guárdalo para el viaje.`, '#10b981');
-                setTimeout(() => { mostrarToast(`📱 Tu código de confirmación: ${codigo} - Preséntalo al conductor`, '#2563eb'); }, 2000);
-            } else if(viaje) { mostrarToast(`❌ No quedan plazas disponibles`, '#ef4444'); }
+            const viaje = viajesGlobales.find(v => v.id === viajeId);
+            if(!viaje) return;
+            if(viaje.plazasReservadas >= viaje.plazasOriginal) { mostrarToast('❌ No quedan plazas', '#ef4444'); return; }
+            if(viaje.pasajeros && viaje.pasajeros.includes(usuarioActual.nombre)) { mostrarToast('❌ Ya reservaste este viaje', '#ef4444'); return; }
+            try {
+                const codigo = await reservarViajeFirebase(viajeId, viaje, usuarioActual.nombre);
+                mostrarToast(`🎉 Reserva confirmada. Código: ${codigo}`, '#10b981');
+                setTimeout(() => mostrarToast(`📱 Tu código: ${codigo} - Preséntalo al conductor`, '#2563eb'), 2000);
+            } catch(error) {
+                mostrarToast('❌ Error al reservar', '#ef4444');
+                console.error(error);
+            }
         }
         
-        function editarViaje(index) {
-            const viaje = viajes[index];
+        async function editarViaje(viajeId) {
+            const viaje = viajesGlobales.find(v => v.id === viajeId);
             if(!usuarioActual || viaje.conductor !== usuarioActual.nombre) { mostrarToast('❌ Solo el conductor puede editar', '#ef4444'); return; }
             const nuevoOrigen = prompt('Nuevo origen:', viaje.origen);
             const nuevoDestino = prompt('Nuevo destino:', viaje.destino);
             const nuevoPrecio = prompt('Nuevo precio (S/.):', viaje.precio);
             const nuevasPlazas = prompt('Nuevo número de plazas:', viaje.plazasOriginal);
-            if(nuevoOrigen) viaje.origen = nuevoOrigen;
-            if(nuevoDestino) viaje.destino = nuevoDestino;
-            if(nuevoPrecio && !isNaN(nuevoPrecio)) viaje.precio = parseInt(nuevoPrecio);
-            if(nuevasPlazas && !isNaN(nuevasPlazas)) { viaje.plazasOriginal = parseInt(nuevasPlazas); viaje.plazas = viaje.plazasOriginal - viaje.plazasReservadas; if(viaje.plazas < 0) viaje.plazas = 0; }
-            guardarViajes(); aplicarFiltros(); mostrarToast('✏️ Viaje actualizado', '#f59e0b');
-        }
-        
-        function eliminarViaje(index) {
-            const viaje = viajes[index];
-            if(!usuarioActual || viaje.conductor !== usuarioActual.nombre) { mostrarToast('❌ Solo el conductor puede eliminar', '#ef4444'); return; }
-            if(confirm(`¿Eliminar el viaje de ${viaje.origen} a ${viaje.destino}?`)) { viajes.splice(index,1); guardarViajes(); aplicarFiltros(); mostrarToast('🗑️ Viaje eliminado', '#ef4444'); actualizarBadgePendientes(); }
-        }
-        
-        function completarViaje(viajeId, pasajeroNombre, codigoIngresado) {
-            const viaje = viajes.find(v => v.id === viajeId);
-            if(!viaje) { mostrarToast('Viaje no encontrado', '#ef4444'); return false; }
-            const codigoCorrecto = viaje.codigos[pasajeroNombre];
-            if(codigoIngresado === codigoCorrecto) {
-                if(viaje.codigosPendientes) {
-                    const index = viaje.codigosPendientes.indexOf(pasajeroNombre);
-                    if(index !== -1) viaje.codigosPendientes.splice(index,1);
-                }
-                viaje.completado = true;
-                guardarViajes();
-                actualizarBadgePendientes();
-                mostrarToast(`✅ Viaje completado para ${pasajeroNombre}`, '#10b981');
-                return true;
+            const updates = {};
+            if(nuevoOrigen) updates.origen = nuevoOrigen;
+            if(nuevoDestino) updates.destino = nuevoDestino;
+            if(nuevoPrecio && !isNaN(nuevoPrecio)) updates.precio = parseInt(nuevoPrecio);
+            if(nuevasPlazas && !isNaN(nuevasPlazas)) {
+                updates.plazasOriginal = parseInt(nuevasPlazas);
+                updates.plazas = parseInt(nuevasPlazas) - viaje.plazasReservadas;
+                if(updates.plazas < 0) updates.plazas = 0;
             }
-            mostrarToast(`❌ Código incorrecto para ${pasajeroNombre}`, '#ef4444');
-            return false;
+            try {
+                await actualizarViajeFirebase(viajeId, updates);
+                mostrarToast('✏️ Viaje actualizado', '#f59e0b');
+            } catch(error) {
+                mostrarToast('❌ Error al actualizar', '#ef4444');
+            }
         }
         
-        // ============ MODALES ============
+        async function eliminarViaje(viajeId) {
+            const viaje = viajesGlobales.find(v => v.id === viajeId);
+            if(!usuarioActual || viaje.conductor !== usuarioActual.nombre) { mostrarToast('❌ Solo el conductor puede eliminar', '#ef4444'); return; }
+            if(confirm(`¿Eliminar el viaje de ${viaje.origen} a ${viaje.destino}?`)) {
+                try {
+                    await eliminarViajeFirebase(viajeId);
+                    mostrarToast('🗑️ Viaje eliminado', '#ef4444');
+                } catch(error) {
+                    mostrarToast('❌ Error al eliminar', '#ef4444');
+                }
+            }
+        }
+        
+        // ============ FUNCIONES AUXILIARES ============
+        function compartirWhatsApp(viaje) { 
+            const msg = `🚗 RideShare Perú%0A%0A📅 Viaje: ${viaje.origen} → ${viaje.destino}%0A📆 Fecha: ${viaje.fecha}${viaje.hora ? `%0A⏰ Hora: ${viaje.hora}` : ''}%0A💺 Plazas: ${viaje.plazasOriginal - viaje.plazasReservadas}/${viaje.plazasOriginal}%0A💰 Precio: S/ ${viaje.precio}%0A👤 Conductor: ${viaje.conductor}`; 
+            window.open(`https://wa.me/?text=${msg}`, '_blank'); 
+        }
+        
+        // ============ AUTENTICACIÓN ============
+        function cargarUsuario() { 
+            const g = localStorage.getItem('currentUser'); 
+            if(g) { 
+                usuarioActual = JSON.parse(g); 
+                document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; 
+                document.getElementById('conductor').value = usuarioActual.nombre; 
+                document.getElementById('conductor').disabled = true; 
+                actualizarBadgePendientes(); 
+            } 
+        }
+        
+        document.getElementById('loginBtn').addEventListener('click', () => { 
+            const nombre = prompt('Ingresa tu nombre:'); 
+            if(nombre && nombre.trim()) { 
+                usuarioActual = { nombre: nombre.trim(), id: Date.now() }; 
+                localStorage.setItem('currentUser', JSON.stringify(usuarioActual)); 
+                document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; 
+                document.getElementById('conductor').value = usuarioActual.nombre; 
+                document.getElementById('conductor').disabled = true; 
+                mostrarToast(`✅ Bienvenido ${usuarioActual.nombre}!`, '#10b981'); 
+                actualizarBadgePendientes(); 
+                aplicarFiltros();
+            } 
+        });
+        
+        document.getElementById('misViajesBtn').addEventListener('click', mostrarMisViajes);
+        document.getElementById('logrosBtn').addEventListener('click', mostrarLogros);
+        
         function mostrarMisViajes() {
             if(!usuarioActual) { mostrarToast('❌ Inicia sesión', '#ef4444'); return; }
-            const misViajes = viajes.filter(v => v.conductor === usuarioActual.nombre);
-            const viajesDondeVoy = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre));
+            const misViajes = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre);
+            const viajesDondeVoy = viajesGlobales.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre));
             const body = document.getElementById('misViajesBody');
-            body.innerHTML = `<div style="margin-bottom:20px;"><h4>🚗 Viajes que publiqué (${misViajes.length})</h4>${misViajes.length === 0 ? '<p class="empty-state">No has publicado viajes</p>' : misViajes.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Plazas reservadas: ${v.plazasReservadas}/${v.plazasOriginal}</div><div>Pasajeros: ${v.pasajeros && v.pasajeros.length > 0 ? v.pasajeros.join(', ') : 'Ninguno'}</div>${v.pasajeros && v.pasajeros.map(p => { const yaCalificado = yaCalificoPasajero(usuarioActual.nombre, p, v.id); const pendiente = v.codigosPendientes && v.codigosPendientes.includes(p); return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f3f4f6;border-radius:12px;"><span>${p}</span><div>${pendiente ? `<span class="codigo-reserva">Código: ${v.codigos[p]}</span><button class="btn-verificar" onclick="abrirVerificarCodigo(${v.id}, '${p}')">Verificar</button>` : '<span class="estado-completado" style="background:#d1fae5;color:#10b981;padding:2px 8px;border-radius:40px;">✓ Completado</span>'}${!yaCalificado && !pendiente ? `<button class="calificar-pasajero-btn" onclick="abrirModalCalificarPasajero('${p}', ${v.id})" style="margin-left:8px;">⭐ Calificar</button>` : ''}</div></div>`; }).join('')}<button class="btn-whatsapp-share" style="margin-top:8px;" onclick="compartirWhatsApp(${JSON.stringify(v).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>`).join('')}</div><div><h4>👤 Viajes que reservé (${viajesDondeVoy.length})</h4>${viajesDondeVoy.length === 0 ? '<p class="empty-state">No has reservado viajes</p>' : viajesDondeVoy.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Conductor: ${v.conductor}</div><div>Precio: S/ ${v.precio}</div><div><span class="codigo-reserva">Tu código: ${v.codigos[usuarioActual.nombre]}</span></div></div>`).join('')}</div>`;
+            body.innerHTML = `<div style="margin-bottom:20px;"><h4>🚗 Viajes que publiqué (${misViajes.length})</h4>${misViajes.length === 0 ? '<p class="empty-state">No has publicado viajes</p>' : misViajes.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Plazas reservadas: ${v.plazasReservadas}/${v.plazasOriginal}</div><div>Pasajeros: ${v.pasajeros && v.pasajeros.length > 0 ? v.pasajeros.join(', ') : 'Ninguno'}</div>${v.pasajeros && v.pasajeros.map(p => { const pendiente = v.codigosPendientes && v.codigosPendientes.includes(p); return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f3f4f6;border-radius:12px;"><span>${p}</span><div>${pendiente ? `<span class="codigo-reserva">Código: ${v.codigos[p]}</span><button class="btn-verificar" onclick="abrirVerificarCodigo('${v.id}', '${p}')">Verificar</button>` : '<span style="background:#d1fae5;color:#10b981;padding:2px 8px;border-radius:40px;">✓ Completado</span>'}</div></div>`; }).join('')}<button class="btn-whatsapp-share" style="margin-top:8px;" onclick="compartirWhatsApp(${JSON.stringify(v).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>`).join('')}</div><div><h4>👤 Viajes que reservé (${viajesDondeVoy.length})</h4>${viajesDondeVoy.length === 0 ? '<p class="empty-state">No has reservado viajes</p>' : viajesDondeVoy.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Conductor: ${v.conductor}</div><div>Precio: S/ ${v.precio}</div><div><span class="codigo-reserva">Tu código: ${v.codigos ? v.codigos[usuarioActual.nombre] : 'No disponible'}</span></div></div>`).join('')}</div>`;
             document.getElementById('misViajesModal').style.display = 'flex';
         }
         
         function mostrarLogros() {
             if(!usuarioActual) { mostrarToast('❌ Inicia sesión', '#ef4444'); return; }
-            const insignias = calcularInsignias(usuarioActual);
             const rating = obtenerCalificacionConductor(usuarioActual.nombre);
-            const viajesConductor = viajes.filter(v => v.conductor === usuarioActual.nombre).length;
-            const viajesPasajero = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre)).length;
+            const viajesConductor = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre).length;
+            const viajesPasajero = viajesGlobales.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre)).length;
+            const insignias = [];
+            if(viajesConductor >= 1) insignias.push({ nombre: '🚗 Primer Viaje', descripcion: 'Completaste tu primer viaje', color: 'bronce' });
+            if(viajesPasajero >= 5) insignias.push({ nombre: '🌟 Viajero Frecuente', descripcion: 'Realizaste 5 viajes como pasajero', color: 'plata' });
+            if(rating > 4.5) insignias.push({ nombre: '⭐ Conductor Estrella', descripcion: 'Calificación > 4.5', color: 'oro' });
+            if(viajesConductor >= 10) insignias.push({ nombre: '🏆 Super Conductor', descripcion: '10 viajes como conductor', color: 'platino' });
             const body = document.getElementById('logrosBody');
             body.innerHTML = `<div style="text-align:center;margin-bottom:20px;"><div class="stars">${renderStars(rating)}</div><p>⭐ Calificación: ${rating > 0 ? rating.toFixed(1) : 'Sin calificaciones'}</p><div class="stats-mini"><div class="stat-mini"><div class="stat-mini-value">${viajesConductor}</div><div class="stat-mini-label">Viajes conductor</div></div><div class="stat-mini"><div class="stat-mini-value">${viajesPasajero}</div><div class="stat-mini-label">Viajes pasajero</div></div></div></div><div class="badges-container">${insignias.length === 0 ? '<p class="empty-state">Sin insignias aún. ¡Sigue viajando!</p>' : insignias.map(i => `<div class="badge-item ${i.color}"><i class="fas fa-medal"></i> ${i.nombre}<small style="display:block;font-size:0.6rem;">${i.descripcion}</small></div>`).join('')}</div>`;
             document.getElementById('logrosModal').style.display = 'flex';
         }
         
-        function abrirModalCalificarPasajero(pasajeroNombre, viajeId) {
-            const modal = document.getElementById('calificarPasajeroModal');
-            const body = document.getElementById('calificarPasajeroBody');
-            body.innerHTML = `<div style="text-align:center;"><p>Calificar a <strong>${escapeHtml(pasajeroNombre)}</strong></p><div class="rating-stars" id="ratingPasajeroStars"><i class="far fa-star" data-rating="1"></i><i class="far fa-star" data-rating="2"></i><i class="far fa-star" data-rating="3"></i><i class="far fa-star" data-rating="4"></i><i class="far fa-star" data-rating="5"></i></div><button class="btn-primary" id="btnEnviarCalificacionPasajero">Enviar calificación</button></div>`;
-            modal.style.display = 'flex';
-            setTimeout(() => {
-                let rating = 0;
-                document.querySelectorAll('#ratingPasajeroStars i').forEach(star => { star.addEventListener('click', function() { rating = parseInt(this.dataset.rating); document.querySelectorAll('#ratingPasajeroStars i').forEach((s,i) => { s.className = i < rating ? 'fas fa-star' : 'far fa-star'; }); }); });
-                document.getElementById('btnEnviarCalificacionPasajero').addEventListener('click', () => { if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } calificarPasajero(usuarioActual.nombre, pasajeroNombre, viajeId, rating); cerrarCalificarPasajeroModal(); mostrarMisViajes(); });
-            }, 100);
-        }
-        
-        function abrirVerificarCodigo(viajeId, pasajeroNombre) {
+        async function abrirVerificarCodigo(viajeId, pasajeroNombre) {
+            const viaje = viajesGlobales.find(v => v.id === viajeId);
+            if(!viaje) return;
             const modal = document.getElementById('verificarCodigoModal');
             const body = document.getElementById('verificarCodigoBody');
             body.innerHTML = `<div style="text-align:center;"><p>Verificar código para <strong>${escapeHtml(pasajeroNombre)}</strong></p><input type="text" id="codigoInput" placeholder="Ingrese código de 6 dígitos" maxlength="6" style="width:100%;padding:12px;border-radius:16px;border:1px solid #e5e7eb;text-align:center;font-size:1.2rem;letter-spacing:4px;"><button class="btn-primary" id="btnVerificarCodigo" style="margin-top:16px;">Verificar</button></div>`;
             modal.style.display = 'flex';
-            document.getElementById('btnVerificarCodigo').addEventListener('click', () => {
+            document.getElementById('btnVerificarCodigo').addEventListener('click', async () => {
                 const codigo = document.getElementById('codigoInput').value;
-                if(codigo.length === 6) { completarViaje(viajeId, pasajeroNombre, codigo); cerrarVerificarCodigoModal(); mostrarMisViajes(); }
-                else mostrarToast('Ingrese un código de 6 dígitos', '#ef4444');
+                if(codigo.length === 6) {
+                    const exito = await completarViajeFirebase(viajeId, pasajeroNombre, codigo, viaje);
+                    if(exito) mostrarToast(`✅ Viaje completado para ${pasajeroNombre}`, '#10b981');
+                    else mostrarToast(`❌ Código incorrecto para ${pasajeroNombre}`, '#ef4444');
+                    cerrarVerificarCodigoModal();
+                    mostrarMisViajes();
+                } else mostrarToast('Ingrese un código de 6 dígitos', '#ef4444');
             });
         }
         
-        function compartirWhatsApp(viaje) { const msg = `🚗 RideShare Perú%0A%0A📅 Viaje: ${viaje.origen} → ${viaje.destino}%0A📆 Fecha: ${viaje.fecha}${viaje.hora ? `%0A⏰ Hora: ${viaje.hora}` : ''}%0A💺 Plazas: ${viaje.plazasOriginal - viaje.plazasReservadas}/${viaje.plazasOriginal}%0A💰 Precio: S/ ${viaje.precio}%0A👤 Conductor: ${viaje.conductor}`; window.open(`https://wa.me/?text=${msg}`, '_blank'); }
-        
-        // ============ MODAL DETALLE ============
+        // ============ MODALES ============
         let mapaActual = null;
-        async function obtenerCoordenadas(ciudad) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ciudad + ', Perú')}&limit=1&countrycodes=pe`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } }); const d = await r.json(); if(d[0]) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) }; return null; } catch(e) { return null; } }
+        async function obtenerCoordenadas(ciudad) { 
+            try { 
+                const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ciudad + ', Perú')}&limit=1&countrycodes=pe`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } }); 
+                const d = await r.json(); 
+                if(d[0]) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) }; 
+                return null; 
+            } catch(e) { return null; } 
+        }
         
-        async function abrirModal(index) {
-            const viaje = viajes[index];
+        async function abrirModal(viajeId) {
+            const viaje = viajesGlobales.find(v => v.id === viajeId);
             if(!viaje) return;
-            const modal = document.getElementById('modal'); const modalBody = document.getElementById('modalBody');
+            const modal = document.getElementById('modal');
+            const modalBody = document.getElementById('modalBody');
             const fechaFormateada = new Date(viaje.fecha).toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
             const rating = obtenerCalificacionConductor(viaje.conductor);
             const plazasRestantes = viaje.plazasOriginal - viaje.plazasReservadas;
@@ -438,14 +1178,8 @@
             modalBody.innerHTML = `<div style="text-align:center;"><div class="driver" style="justify-content:center;margin-bottom:20px;"><div class="driver-avatar">${viaje.conductor.charAt(0).toUpperCase()}</div><div class="driver-info"><h3>${escapeHtml(viaje.conductor)}</h3><div class="stars">${renderStars(rating)}</div></div></div><div style="background:#f3f4f6;border-radius:20px;padding:16px;margin:16px 0;"><div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong> Origen:</strong><br>${escapeHtml(viaje.origen)}</div><div><i class="fas fa-arrow-right"></i></div><div><i class="fas fa-flag-checkered" style="color:#2563eb;"></i><strong> Destino:</strong><br>${escapeHtml(viaje.destino)}</div></div><div><i class="fas fa-calendar"></i> <strong>Fecha:</strong> ${fechaFormateada}</div><div><i class="fas fa-clock"></i> <strong>Hora:</strong> ${viaje.hora || 'No especificada'}</div><div><i class="fas fa-chair"></i> <strong>Plazas:</strong> ${plazasRestantes} / ${viaje.plazasOriginal}</div><div><i class="fas fa-soles"></i> <strong>Precio:</strong> S/ ${viaje.precio}</div><div style="margin-top:12px;"><a href="${osmLink}" target="_blank" class="osm-link"><i class="fas fa-map-marked-alt"></i> Ver ruta en OpenStreetMap</a></div></div><div id="mapaViaje" class="map"></div><div style="margin-top:16px;"><button class="btn-whatsapp-share" onclick="compartirWhatsApp(${JSON.stringify(viaje).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>${usuarioActual && usuarioActual.nombre !== viaje.conductor && !yaCalificado && plazasRestantes < viaje.plazasOriginal ? `<div style="margin-top:20px;"><h4>Calificar a ${escapeHtml(viaje.conductor)}</h4><div class="rating-stars" id="ratingStarsModal"><i class="far fa-star" data-rating="1"></i><i class="far fa-star" data-rating="2"></i><i class="far fa-star" data-rating="3"></i><i class="far fa-star" data-rating="4"></i><i class="far fa-star" data-rating="5"></i></div><button class="btn-primary" id="enviarRating">Enviar calificación</button></div>` : (yaCalificado ? '<p style="margin-top:20px;">✅ Ya calificaste este viaje</p>' : '')}</div>`;
             modal.style.display = 'flex';
             setTimeout(async () => { if(mapaActual) mapaActual.remove(); const mapDiv = document.getElementById('mapaViaje'); if(mapDiv) { const coordsOrigen = await obtenerCoordenadas(viaje.origen); const coordsDestino = await obtenerCoordenadas(viaje.destino); const latCentro = coordsOrigen ? coordsOrigen.lat : -12.0464; const lonCentro = coordsOrigen ? coordsOrigen.lon : -77.0428; mapaActual = L.map(mapDiv).setView([latCentro, lonCentro], 7); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM' }).addTo(mapaActual); if(coordsOrigen) L.marker([coordsOrigen.lat, coordsOrigen.lon]).bindPopup(`<strong>Origen</strong><br>${viaje.origen}`).addTo(mapaActual); if(coordsDestino) L.marker([coordsDestino.lat, coordsDestino.lon]).bindPopup(`<strong>Destino</strong><br>${viaje.destino}`).addTo(mapaActual); } }, 100);
-            if(!yaCalificado && usuarioActual && usuarioActual.nombre !== viaje.conductor && plazasRestantes < viaje.plazasOriginal) { setTimeout(() => { let rating = 0; document.querySelectorAll('#ratingStarsModal i').forEach(star => { star.addEventListener('click', function() { rating = parseInt(this.dataset.rating); document.querySelectorAll('#ratingStarsModal i').forEach((s,i) => { s.className = i < rating ? 'fas fa-star' : 'far fa-star'; }); }); }); document.getElementById('enviarRating').addEventListener('click', () => { if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } if(!calificaciones[viaje.conductor]) calificaciones[viaje.conductor] = []; calificaciones[viaje.conductor].push(rating); guardarCalificaciones(); mostrarToast(`⭐ Calificaste a ${viaje.conductor} con ${rating} estrellas`, '#10b981'); cerrarModal(); aplicarFiltros(); }); }, 200); }
+            if(!yaCalificado && usuarioActual && usuarioActual.nombre !== viaje.conductor && plazasRestantes < viaje.plazasOriginal) { setTimeout(() => { let rating = 0; document.querySelectorAll('#ratingStarsModal i').forEach(star => { star.addEventListener('click', function() { rating = parseInt(this.dataset.rating); document.querySelectorAll('#ratingStarsModal i').forEach((s,i) => { s.className = i < rating ? 'fas fa-star' : 'far fa-star'; }); }); }); document.getElementById('enviarRating').addEventListener('click', () => { if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } if(!calificaciones[viaje.conductor]) calificaciones[viaje.conductor] = []; calificaciones[viaje.conductor].push(rating); guardarCalificaciones(); mostrarToast(`⭐ Calificaste a ${viaje.conductor} con ${rating} estrellas`, '#10b981'); cerrarModal(); }); }, 200); }
         }
-        
-        // ============ AUTENTICACIÓN ============
-        function cargarUsuario() { const g = localStorage.getItem('currentUser'); if(g) { usuarioActual = JSON.parse(g); document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; document.getElementById('conductor').value = usuarioActual.nombre; document.getElementById('conductor').disabled = true; actualizarBadgePendientes(); } }
-        document.getElementById('loginBtn').addEventListener('click', () => { const nombre = prompt('Ingresa tu nombre:'); if(nombre && nombre.trim()) { usuarioActual = { nombre: nombre.trim(), id: Date.now() }; localStorage.setItem('currentUser', JSON.stringify(usuarioActual)); document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; document.getElementById('conductor').value = usuarioActual.nombre; document.getElementById('conductor').disabled = true; mostrarToast(`✅ Bienvenido ${usuarioActual.nombre}!`, '#10b981'); actualizarBadgePendientes(); } });
-        document.getElementById('misViajesBtn').addEventListener('click', mostrarMisViajes);
-        document.getElementById('logrosBtn').addEventListener('click', mostrarLogros);
         
         function cerrarModal() { document.getElementById('modal').style.display = 'none'; if(mapaActual) { mapaActual.remove(); mapaActual = null; } }
         function cerrarMisViajesModal() { document.getElementById('misViajesModal').style.display = 'none'; }
@@ -453,15 +1187,15 @@
         function cerrarCalificarPasajeroModal() { document.getElementById('calificarPasajeroModal').style.display = 'none'; }
         function cerrarVerificarCodigoModal() { document.getElementById('verificarCodigoModal').style.display = 'none'; }
         
-        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-        function mostrarToast(m, c='#1f2937') { const t = document.getElementById('toast'); t.style.display = 'flex'; t.style.background = c; t.innerHTML = `<i class="fas ${c==='#10b981'?'fa-check-circle':(c==='#ef4444'?'fa-exclamation-circle':'fa-info-circle')}"></i> ${m}`; t.style.animation = 'slideUp 0.3s ease'; setTimeout(() => t.style.display = 'none', 4000); }
-        
+        // ============ MODO OSCURO ============
         const themeToggle = document.getElementById('themeToggle');
         themeToggle.addEventListener('click', () => { document.body.classList.toggle('dark'); const dark = document.body.classList.contains('dark'); themeToggle.innerHTML = dark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; localStorage.setItem('darkMode', dark); });
         if(localStorage.getItem('darkMode') === 'true') { document.body.classList.add('dark'); themeToggle.innerHTML = '<i class="fas fa-sun"></i><span>Modo claro</span>'; }
         
+        // ============ INICIALIZAR ============
+        cargarCalificacionesLocales();
         cargarUsuario();
-        cargarDatos();
+        cargarViajesFirebase();
         
         window.abrirModal = abrirModal;
         window.cerrarModal = cerrarModal;
@@ -470,7 +1204,6 @@
         window.eliminarViaje = eliminarViaje;
         window.seleccionarCiudad = seleccionarCiudad;
         window.compartirWhatsApp = compartirWhatsApp;
-        window.abrirModalCalificarPasajero = abrirModalCalificarPasajero;
         window.abrirVerificarCodigo = abrirVerificarCodigo;
         window.cerrarMisViajesModal = cerrarMisViajesModal;
         window.cerrarLogrosModal = cerrarLogrosModal;
