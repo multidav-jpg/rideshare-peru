@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>RideShare Perú - Carpooling moderno</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; transition: background 0.3s, color 0.3s; }
+        body.dark { background: #111827; color: #f3f4f6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+        .logo-area { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
+        .logo-text h1 { font-size: 1.7rem; font-weight: 700; background: linear-gradient(135deg, #2563eb, #06b6d4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .logo-text p { font-size: 0.85rem; color: #6b7280; }
+        .user-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .btn-icon { background: white; border: none; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.2s; position: relative; }
+        body.dark .btn-icon { background: #1f2937; color: white; }
+        .theme-toggle { background: white; border: none; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        body.dark .theme-toggle { background: #1f2937; color: white; }
+        .badge-notif { background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; position: absolute; top: -5px; right: -5px; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1.5fr; gap: 28px; }
+        @media (max-width: 900px) { .dashboard { grid-template-columns: 1fr; } }
+        .card { background: white; border-radius: 28px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: all 0.3s; border: 1px solid rgba(0,0,0,0.05); }
+        body.dark .card { background: #1f2937; border-color: #374151; }
+        .card-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+        .card-title i { color: #2563eb; font-size: 1.4rem; }
+        .form-group { margin-bottom: 20px; position: relative; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: #4b5563; }
+        body.dark .form-group label { color: #9ca3af; }
+        .input-icon { position: relative; }
+        .input-icon i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 1rem; z-index: 2; }
+        input, select, textarea { width: 100%; padding: 14px 14px 14px 42px; border: 1.5px solid #e5e7eb; border-radius: 18px; font-size: 0.95rem; font-family: 'Inter', sans-serif; transition: all 0.2s; background: white; }
+        body.dark input, body.dark select, body.dark textarea { background: #374151; border-color: #4b5563; color: white; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 280px; overflow-y: auto; z-index: 1000; margin-top: 4px; display: none; }
+        body.dark .autocomplete-suggestions { background: #1f2937; border: 1px solid #374151; }
+        .autocomplete-suggestion { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+        body.dark .autocomplete-suggestion { border-bottom-color: #374151; color: white; }
+        .autocomplete-suggestion:hover { background: #f3f4f6; }
+        body.dark .autocomplete-suggestion:hover { background: #374151; }
+        .autocomplete-suggestion i { color: #2563eb; width: 20px; }
+        .suggestion-region { font-size: 0.7rem; color: #9ca3af; margin-left: auto; }
+        .loading-suggestions { padding: 12px 16px; text-align: center; color: #9ca3af; }
+        .row-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb, #06b6d4); color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(37,99,235,0.3); }
+        .filter-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+        body.dark .filter-section { border-bottom-color: #374151; }
+        .filter-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: center; }
+        @media (max-width: 600px) { .filter-row { grid-template-columns: 1fr; } }
+        .trips-list { display: flex; flex-direction: column; gap: 16px; max-height: 600px; overflow-y: auto; padding-right: 8px; }
+        .trips-list::-webkit-scrollbar { width: 6px; }
+        .trips-list::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        .trips-list::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 10px; }
+        .trip-card { background: #f9fafb; border-radius: 24px; padding: 20px; transition: all 0.2s; border: 1px solid #e5e7eb; cursor: pointer; position: relative; }
+        body.dark .trip-card { background: #2d3748; border-color: #374151; }
+        .trip-card:hover { transform: translateX(4px); border-color: #2563eb; }
+        .trip-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .driver { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .driver-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.1rem; }
+        .driver-info h4 { font-weight: 600; margin-bottom: 2px; }
+        .driver-info span { font-size: 0.75rem; color: #6b7280; }
+        .stars { display: flex; gap: 2px; margin-top: 4px; }
+        .stars i { font-size: 0.7rem; color: #fbbf24; }
+        .stars i.empty { color: #d1d5db; }
+        body.dark .stars i.empty { color: #4b5563; }
+        .seats-badge { background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; font-weight: 600; }
+        .trip-route { margin: 14px 0; padding: 12px 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+        .route-point { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .route-point i { width: 20px; color: #6b7280; }
+        .route-point strong { font-weight: 600; }
+        .route-point a { color: #2563eb; text-decoration: none; font-size: 0.75rem; margin-left: 8px; }
+        .route-point a:hover { text-decoration: underline; }
+        .trip-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+        .price { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
+        .price small { font-size: 0.8rem; font-weight: normal; color: #6b7280; }
+        .trip-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-reserve { background: #2563eb; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-reserve:hover { background: #1d4ed8; transform: scale(1.02); }
+        .btn-edit { background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-whatsapp-share { background: #25D366; color: white; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-whatsapp-share:hover { background: #128C7E; transform: scale(1.02); }
+        .btn-verificar { background: #8b5cf6; color: white; border: none; padding: 4px 12px; border-radius: 40px; cursor: pointer; font-size: 0.7rem; margin-left: 8px; }
+        .codigo-reserva { background: #f3f4f6; padding: 4px 8px; border-radius: 12px; font-family: monospace; font-size: 0.8rem; font-weight: bold; }
+        body.dark .codigo-reserva { background: #374151; }
+        .empty-state { text-align: center; padding: 48px 20px; color: #9ca3af; }
+        .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; border-radius: 28px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 28px; position: relative; }
+        body.dark .modal-content { background: #1f2937; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; }
+        .rating-stars { display: flex; gap: 8px; justify-content: center; margin: 20px 0; }
+        .rating-stars i { font-size: 2rem; cursor: pointer; color: #d1d5db; transition: all 0.2s; }
+        .rating-stars i:hover, .rating-stars i.active { color: #fbbf24; }
+        .map { height: 200px; border-radius: 16px; margin-top: 16px; z-index: 1; }
+        .osm-link { display: inline-block; margin-top: 8px; color: #2563eb; text-decoration: none; font-size: 0.8rem; }
+        .osm-link:hover { text-decoration: underline; }
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1f2937; color: white; padding: 14px 24px; border-radius: 50px; font-weight: 500; display: none; align-items: center; gap: 10px; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .badge-owned { background: #10b981; color: white; padding: 4px 8px; border-radius: 40px; font-size: 0.7rem; position: absolute; top: 12px; right: 12px; }
+        .peru-flag { display: inline-block; margin-left: 5px; font-size: 0.7rem; }
+        .badges-container { display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0; justify-content: center; }
+        .badge-item { border-radius: 60px; padding: 8px 16px; display: flex; align-items: center; gap: 8px; color: white; font-size: 0.8rem; font-weight: 500; }
+        .badge-item.bronce { background: linear-gradient(135deg, #d97706, #b45309); }
+        .badge-item.plata { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+        .badge-item.oro { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .badge-item.platino { background: linear-gradient(135deg, #06b6d4, #2563eb); }
+        .stats-mini { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+        .stat-mini { text-align: center; }
+        .stat-mini-value { font-size: 1.2rem; font-weight: 700; color: #2563eb; }
+        .stat-mini-label { font-size: 0.7rem; color: #6b7280; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-area">
+                <div class="logo-icon"><i class="fas fa-car-side"></i></div>
+                <div class="logo-text"><h1>RideShare Perú <span class="peru-flag">🇵🇪</span></h1><p>Viajes compartidos por todo Perú</p></div>
+            </div>
+            <div class="user-controls">
+                <button class="btn-icon" id="loginBtn"><i class="fas fa-user"></i><span id="userNameDisplay">Iniciar sesión</span></button>
+                <button class="btn-icon" id="misViajesBtn"><i class="fas fa-calendar-alt"></i><span>Mis viajes</span><span id="pendientesBadge" class="badge-notif" style="display:none;">0</span></button>
+                <button class="btn-icon" id="logrosBtn"><i class="fas fa-trophy"></i><span>Logros</span></button>
+                <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i><span>Modo oscuro</span></button>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <div class="card-title"><i class="fas fa-plus-circle"></i><span>Publicar nuevo viaje</span></div>
+                <form id="formViaje">
+                    <div class="form-group"><label>Tu nombre</label><div class="input-icon"><i class="fas fa-user"></i><input type="text" id="conductor" placeholder="¿Cómo te llamas?" required></div></div>
+                    <div class="row-2cols">
+                        <div class="form-group" id="origenGroup"><label>Origen <small>(Ciudad de Perú)</small></label><div class="input-icon"><i class="fas fa-circle-dot"></i><input type="text" id="origen" placeholder="Ej: Lima, Arequipa, Cusco..." required autocomplete="off"></div><div id="origenSuggestions" class="autocomplete-suggestions"></div></div>
+                        <div class="form-group" id="destinoGroup"><label>Destino <small>(Ciudad de Perú)</small></label><div class="input-icon"><i class="fas fa-flag-checkered"></i><input type="text" id="destino" placeholder="Ej: Trujillo, Chiclayo, Piura..." required autocomplete="off"></div><div id="destinoSuggestions" class="autocomplete-suggestions"></div></div>
+                    </div>
+                    <div class="row-2cols">
+                        <div class="form-group"><label>Fecha</label><div class="input-icon"><i class="fas fa-calendar"></i><input type="date" id="fecha" required></div></div>
+                        <div class="form-group"><label>Hora de salida</label><div class="input-icon"><i class="fas fa-clock"></i><input type="time" id="hora" required></div></div>
+                    </div>
+                    <div class="row-2cols">
+                        <div class="form-group"><label>Plazas</label><div class="input-icon"><i class="fas fa-chair"></i><input type="number" id="plazas" min="1" max="8" value="3" required></div></div>
+                        <div class="form-group"><label>Precio por persona (S/.)</label><div class="input-icon"><i class="fas fa-soles"></i><input type="number" id="precio" placeholder="25" min="0" step="1" required></div></div>
+                    </div>
+                    <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Publicar viaje</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i class="fas fa-list-ul"></i><span>Viajes disponibles en Perú</span></div>
+                <div class="filter-section"><div class="filter-row"><input type="text" id="filtroOrigen" placeholder="🔍 Filtrar por origen..."><input type="text" id="filtroDestino" placeholder="🎯 Filtrar por destino..."><input type="date" id="filtroFecha" placeholder="📅 Fecha"></div></div>
+                <div id="listaViajes" class="trips-list"><div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes publicados</p><small>¡Comparte tu coche y empieza a viajar por Perú!</small></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES -->
+    <div id="modal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Detalle del viaje</h3><button class="close-modal" onclick="cerrarModal()">&times;</button></div><div id="modalBody"></div></div></div>
+    <div id="misViajesModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Mis viajes</h3><button class="close-modal" onclick="cerrarMisViajesModal()">&times;</button></div><div id="misViajesBody"></div></div></div>
+    <div id="logrosModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Mis Logros e Insignias</h3><button class="close-modal" onclick="cerrarLogrosModal()">&times;</button></div><div id="logrosBody"></div></div></div>
+    <div id="calificarPasajeroModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Calificar pasajero</h3><button class="close-modal" onclick="cerrarCalificarPasajeroModal()">&times;</button></div><div id="calificarPasajeroBody"></div></div></div>
+    <div id="verificarCodigoModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>Verificar código de viaje</h3><button class="close-modal" onclick="cerrarVerificarCodigoModal()">&times;</button></div><div id="verificarCodigoBody"></div></div></div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============ LISTA DE CIUDADES DE PERÚ ============
+        const ciudadesPeru = ["Lima","Arequipa","Trujillo","Chiclayo","Piura","Cusco","Iquitos","Huancayo","Chimbote","Pucallpa","Tacna","Ica","Juliaca","Sullana","Cajamarca","Ayacucho","Chincha Alta","Huánuco","Tarapoto","Puno","Tumbes","Huaraz","Moquegua","Pisco","Jaén","Barranca","Talara","Abancay","Moyobamba","Puerto Maldonado","Cerro de Pasco","Huacho","Chepén","Huamanga","Andahuaylas","Camaná","Lambayeque","Nazca","Paita","Sechura","Yurimaguas","Bagua Grande","Tingo María","Chachapoyas","San Vicente de Cañete","Imperial","Huaura","Chosica","Mala","Matucana","Canta","Corongo","Huari","Caraz"];
+        let searchCache = new Map();
+        let currentTimeout = null;
+
+        async function buscarCiudadesPeru(query, inputId) {
+            const suggestionsDiv = document.getElementById(inputId + 'Suggestions');
+            if (!query || query.length < 2) { if(suggestionsDiv) suggestionsDiv.style.display = 'none'; return; }
+            const cacheKey = query.toLowerCase();
+            if (searchCache.has(cacheKey)) { mostrarSugerencias(searchCache.get(cacheKey), suggestionsDiv, inputId); return; }
+            if(suggestionsDiv) { suggestionsDiv.innerHTML = '<div class="loading-suggestions"><i class="fas fa-spinner fa-spin"></i> Buscando ciudades...</div>'; suggestionsDiv.style.display = 'block'; }
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&addressdetails=1&countrycodes=pe&accept-language=es`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } });
+                const data = await response.json();
+                let resultados = [];
+                if (data.length > 0) { resultados = data.map(lugar => ({ nombre: lugar.display_name.split(',')[0].trim(), region: lugar.address.state || 'Perú' })); }
+                else { resultados = ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' })); }
+                searchCache.set(cacheKey, resultados);
+                mostrarSugerencias(resultados, suggestionsDiv, inputId);
+            } catch(error) {
+                const localResults = ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' }));
+                mostrarSugerencias(localResults, suggestionsDiv, inputId);
+            }
+        }
+        function mostrarSugerencias(resultados, suggestionsDiv, inputId) {
+            if (!suggestionsDiv) return;
+            if (resultados.length === 0) { suggestionsDiv.innerHTML = '<div class="loading-suggestions">No encontrado</div>'; return; }
+            suggestionsDiv.innerHTML = resultados.map(lugar => `<div class="autocomplete-suggestion" onclick="seleccionarCiudad('${inputId}', '${escapeHtml(lugar.nombre)}')"><i class="fas fa-map-marker-alt"></i><span>${escapeHtml(lugar.nombre)}</span><span class="suggestion-region">${escapeHtml(lugar.region)}</span></div>`).join('');
+        }
+        function seleccionarCiudad(inputId, ciudad) { document.getElementById(inputId).value = ciudad; const div = document.getElementById(inputId + 'Suggestions'); if(div) div.style.display = 'none'; }
+        function setupAutocomplete(inputId) {
+            const input = document.getElementById(inputId);
+            if(!input) return;
+            input.addEventListener('input', function(e) { if(currentTimeout) clearTimeout(currentTimeout); currentTimeout = setTimeout(() => buscarCiudadesPeru(this.value, inputId), 250); });
+            input.addEventListener('blur', function() { setTimeout(() => { const div = document.getElementById(inputId + 'Suggestions'); if(div) div.style.display = 'none'; }, 200); });
+            input.addEventListener('focus', function() { if(this.value.length >= 2) buscarCiudadesPeru(this.value, inputId); });
+        }
+        setupAutocomplete('origen');
+        setupAutocomplete('destino');
+        document.addEventListener('click', function(e) { if (!e.target.closest('.form-group')) { document.querySelectorAll('.autocomplete-suggestions').forEach(div => div.style.display = 'none'); } });
+        
+        function generarOSMLink(origen, destino) { return `https://www.openstreetmap.org/directions?engine=graphhopper_foot&route=${encodeURIComponent(origen)}, Perú&to=${encodeURIComponent(destino)}, Perú`; }
+        
+        // ============ DATOS GLOBALES ============
+        let viajes = [];
+        let calificaciones = {};
+        let calificacionesPasajeros = {};
+        let usuarioActual = null;
+        let reservasPendientes = 0;
+
+        // ============ FUNCIONES DE CÓDIGO ============
+        function generarCodigoConfirmacion() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+        
+        // ============ CALIFICACIONES ============
+        function cargarCalificacionesPasajeros() { const g = localStorage.getItem('calificacionesPasajeros'); if(g) calificacionesPasajeros = JSON.parse(g); }
+        function guardarCalificacionesPasajeros() { localStorage.setItem('calificacionesPasajeros', JSON.stringify(calificacionesPasajeros)); }
+        function yaCalificoPasajero(conductorNombre, pasajeroNombre, viajeId) { return calificacionesPasajeros[`${conductorNombre}_${pasajeroNombre}_${viajeId}`] !== undefined; }
+        function calificarPasajero(conductorNombre, pasajeroNombre, viajeId, puntaje) { calificacionesPasajeros[`${conductorNombre}_${pasajeroNombre}_${viajeId}`] = { puntaje, fecha: new Date().toISOString() }; guardarCalificacionesPasajeros(); mostrarToast(`⭐ Calificaste a ${pasajeroNombre} con ${puntaje} estrellas`, '#10b981'); }
+        function obtenerCalificacionConductor(conductorNombre) { const calif = calificaciones[conductorNombre]; if(!calif || calif.length === 0) return 0; const suma = calif.reduce((a,b) => a + b, 0); return suma / calif.length; }
+        function renderStars(rating) { let stars = ''; for(let i=1;i<=5;i++) stars += i<=Math.round(rating) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; return stars; }
+        
+        // ============ INSIGNIAS ============
+        function calcularInsignias(usuario) {
+            const insignias = [];
+            const viajesConductor = viajes.filter(v => v.conductor === usuario.nombre && v.completado === true).length;
+            const viajesPasajero = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuario.nombre) && v.completado === true).length;
+            const ratingConductor = obtenerCalificacionConductor(usuario.nombre);
+            if(viajesConductor >= 1) insignias.push({ nombre: '🚗 Primer Viaje', descripcion: 'Completaste tu primer viaje', color: 'bronce' });
+            if(viajesPasajero >= 5) insignias.push({ nombre: '🌟 Viajero Frecuente', descripcion: 'Realizaste 5 viajes como pasajero', color: 'plata' });
+            if(ratingConductor > 4.5) insignias.push({ nombre: '⭐ Conductor Estrella', descripcion: 'Calificación > 4.5', color: 'oro' });
+            if(viajesConductor >= 10) insignias.push({ nombre: '🏆 Super Conductor', descripcion: '10 viajes como conductor', color: 'platino' });
+            return insignias;
+        }
+        
+        // ============ FUNCIONES DE VIAJES ============
+        function actualizarBadgePendientes() {
+            const badge = document.getElementById('pendientesBadge');
+            const pendientes = viajes.filter(v => v.conductor === usuarioActual?.nombre && v.codigosPendientes && v.codigosPendientes.length > 0).length;
+            if(badge) { if(pendientes > 0) { badge.style.display = 'inline-block'; badge.textContent = pendientes; } else badge.style.display = 'none'; }
+        }
+        
+        function guardarViajes() { localStorage.setItem('rideshares', JSON.stringify(viajes)); }
+        function guardarCalificaciones() { localStorage.setItem('ratings', JSON.stringify(calificaciones)); }
+        
+        function cargarDatos() {
+            const guardados = localStorage.getItem('rideshares');
+            if(guardados) { viajes = JSON.parse(guardados); viajes.forEach(v => { if(!v.pasajeros) v.pasajeros = []; if(v.plazasReservadas === undefined) v.plazasReservadas = 0; if(v.plazasOriginal === undefined) v.plazasOriginal = v.plazas; if(!v.codigos) v.codigos = {}; if(!v.codigosPendientes) v.codigosPendientes = []; }); }
+            const califGuardadas = localStorage.getItem('ratings');
+            if(califGuardadas) calificaciones = JSON.parse(califGuardadas);
+            cargarCalificacionesPasajeros();
+            aplicarFiltros();
+            actualizarBadgePendientes();
+        }
+        
+        function validarFecha(fecha) { const hoy = new Date(); hoy.setHours(0,0,0,0); return new Date(fecha) >= hoy; }
+        const hoyDate = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha').min = hoyDate;
+        document.getElementById('filtroFecha').min = hoyDate;
+        
+        // ============ FILTROS ============
+        function aplicarFiltros() {
+            const filtroOrigen = document.getElementById('filtroOrigen').value.toLowerCase();
+            const filtroDestino = document.getElementById('filtroDestino').value.toLowerCase();
+            const filtroFecha = document.getElementById('filtroFecha').value;
+            let filtrados = [...viajes];
+            if(filtroOrigen) filtrados = filtrados.filter(v => v.origen.toLowerCase().includes(filtroOrigen));
+            if(filtroDestino) filtrados = filtrados.filter(v => v.destino.toLowerCase().includes(filtroDestino));
+            if(filtroFecha) filtrados = filtrados.filter(v => v.fecha === filtroFecha);
+            filtrados.sort((a,b) => new Date(a.fecha) - new Date(b.fecha));
+            mostrarViajes(filtrados);
+        }
+        document.getElementById('filtroOrigen').addEventListener('input', aplicarFiltros);
+        document.getElementById('filtroDestino').addEventListener('input', aplicarFiltros);
+        document.getElementById('filtroFecha').addEventListener('change', aplicarFiltros);
+        
+        function mostrarViajes(viajesMostrar = null) {
+            const contenedor = document.getElementById('listaViajes');
+            const lista = viajesMostrar || viajes;
+            if(lista.length === 0) { contenedor.innerHTML = `<div class="empty-state"><i class="fas fa-car-side"></i><p>No hay viajes publicados</p><small>¡Comparte tu coche y empieza a viajar por Perú!</small></div>`; return; }
+            contenedor.innerHTML = lista.map((viaje, idx) => {
+                const indexReal = viajes.findIndex(v => v.id === viaje.id);
+                const fechaObj = new Date(viaje.fecha);
+                const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+                const iniciales = viaje.conductor.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+                const rating = obtenerCalificacionConductor(viaje.conductor);
+                const esPropietario = usuarioActual && viaje.conductor === usuarioActual.nombre;
+                const plazasRestantes = viaje.plazasOriginal - (viaje.plazasReservadas || 0);
+                const osmLink = generarOSMLink(viaje.origen, viaje.destino);
+                return `<div class="trip-card" onclick="abrirModal(${indexReal})">${esPropietario ? '<div class="badge-owned">Tú eres el conductor</div>' : ''}<div class="trip-header"><div class="driver" data-conductor="${viaje.conductor}"><div class="driver-avatar">${escapeHtml(iniciales)}</div><div class="driver-info"><h4>${escapeHtml(viaje.conductor)}</h4><div class="stars">${renderStars(rating)}</div><span>${rating > 0 ? rating.toFixed(1) + ' ★' : 'Sin reseñas'}</span></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazasRestantes} / ${viaje.plazasOriginal} plazas</div></div><div class="trip-route"><div class="route-point"><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong>${escapeHtml(viaje.origen)}</strong><a href="${osmLink}" target="_blank" onclick="event.stopPropagation()"><i class="fas fa-external-link-alt"></i> Ver ruta</a></div><div class="route-point"><i class="fas fa-arrow-down" style="color:#9ca3af;"></i><strong>${escapeHtml(viaje.destino)}</strong></div></div><div class="trip-footer"><div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><i class="fas fa-calendar-alt" style="font-size:0.75rem;"></i><span style="font-size:0.85rem;">${fechaFormateada} ${viaje.hora ? `• ${viaje.hora}` : ''}</span></div><div class="price">S/ ${viaje.precio}<small> por persona</small></div></div><div class="trip-actions">${!esPropietario && plazasRestantes > 0 ? `<button class="btn-reserve" onclick="event.stopPropagation(); reservarViaje(${indexReal})"><i class="fas fa-check-circle"></i> Reservar</button>` : ''}<button class="btn-whatsapp-share" onclick="event.stopPropagation(); compartirWhatsApp(${JSON.stringify(viaje).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i></button>${esPropietario ? `<button class="btn-edit" onclick="event.stopPropagation(); editarViaje(${indexReal})"><i class="fas fa-edit"></i></button><button class="btn-delete" onclick="event.stopPropagation(); eliminarViaje(${indexReal})"><i class="fas fa-trash"></i></button>` : ''}</div></div></div>`;
+            }).join('');
+        }
+        
+        // ============ CRUD ============
+        document.getElementById('formViaje').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if(!usuarioActual) { mostrarToast('❌ Primero inicia sesión', '#ef4444'); return; }
+            const fecha = document.getElementById('fecha').value;
+            if(!validarFecha(fecha)) { mostrarToast('❌ No se pueden publicar viajes con fecha pasada', '#ef4444'); return; }
+            const nuevoViaje = { id: Date.now(), conductor: usuarioActual.nombre, origen: document.getElementById('origen').value.trim(), destino: document.getElementById('destino').value.trim(), fecha: fecha, hora: document.getElementById('hora').value, plazasOriginal: parseInt(document.getElementById('plazas').value), plazasReservadas: 0, plazas: parseInt(document.getElementById('plazas').value), precio: parseInt(document.getElementById('precio').value), pasajeros: [], codigos: {}, codigosPendientes: [], fechaPublicacion: new Date().toISOString() };
+            if(!nuevoViaje.origen || !nuevoViaje.destino || !nuevoViaje.fecha) { mostrarToast('❌ Completa todos los campos', '#ef4444'); return; }
+            viajes.push(nuevoViaje); guardarViajes(); aplicarFiltros(); this.reset(); document.getElementById('plazas').value = '3'; document.getElementById('fecha').min = hoyDate; mostrarToast(`✅ ¡Viaje publicado! ${nuevoViaje.origen} → ${nuevoViaje.destino}`, '#10b981');
+        });
+        
+        function reservarViaje(index) {
+            if(!usuarioActual) { mostrarToast('❌ Inicia sesión para reservar', '#ef4444'); return; }
+            const viaje = viajes[index];
+            if(viaje && viaje.plazasReservadas < viaje.plazasOriginal) {
+                const codigo = generarCodigoConfirmacion();
+                viaje.plazasReservadas++;
+                viaje.plazas = viaje.plazasOriginal - viaje.plazasReservadas;
+                if(!viaje.pasajeros) viaje.pasajeros = [];
+                viaje.pasajeros.push(usuarioActual.nombre);
+                viaje.codigos[usuarioActual.nombre] = codigo;
+                if(!viaje.codigosPendientes) viaje.codigosPendientes = [];
+                viaje.codigosPendientes.push(usuarioActual.nombre);
+                guardarViajes();
+                aplicarFiltros();
+                actualizarBadgePendientes();
+                mostrarToast(`🎉 ¡Reserva confirmada! Tu código es: ${codigo}. Guárdalo para el viaje.`, '#10b981');
+                setTimeout(() => { mostrarToast(`📱 Tu código de confirmación: ${codigo} - Preséntalo al conductor`, '#2563eb'); }, 2000);
+            } else if(viaje) { mostrarToast(`❌ No quedan plazas disponibles`, '#ef4444'); }
+        }
+        
+        function editarViaje(index) {
+            const viaje = viajes[index];
+            if(!usuarioActual || viaje.conductor !== usuarioActual.nombre) { mostrarToast('❌ Solo el conductor puede editar', '#ef4444'); return; }
+            const nuevoOrigen = prompt('Nuevo origen:', viaje.origen);
+            const nuevoDestino = prompt('Nuevo destino:', viaje.destino);
+            const nuevoPrecio = prompt('Nuevo precio (S/.):', viaje.precio);
+            const nuevasPlazas = prompt('Nuevo número de plazas:', viaje.plazasOriginal);
+            if(nuevoOrigen) viaje.origen = nuevoOrigen;
+            if(nuevoDestino) viaje.destino = nuevoDestino;
+            if(nuevoPrecio && !isNaN(nuevoPrecio)) viaje.precio = parseInt(nuevoPrecio);
+            if(nuevasPlazas && !isNaN(nuevasPlazas)) { viaje.plazasOriginal = parseInt(nuevasPlazas); viaje.plazas = viaje.plazasOriginal - viaje.plazasReservadas; if(viaje.plazas < 0) viaje.plazas = 0; }
+            guardarViajes(); aplicarFiltros(); mostrarToast('✏️ Viaje actualizado', '#f59e0b');
+        }
+        
+        function eliminarViaje(index) {
+            const viaje = viajes[index];
+            if(!usuarioActual || viaje.conductor !== usuarioActual.nombre) { mostrarToast('❌ Solo el conductor puede eliminar', '#ef4444'); return; }
+            if(confirm(`¿Eliminar el viaje de ${viaje.origen} a ${viaje.destino}?`)) { viajes.splice(index,1); guardarViajes(); aplicarFiltros(); mostrarToast('🗑️ Viaje eliminado', '#ef4444'); actualizarBadgePendientes(); }
+        }
+        
+        function completarViaje(viajeId, pasajeroNombre, codigoIngresado) {
+            const viaje = viajes.find(v => v.id === viajeId);
+            if(!viaje) { mostrarToast('Viaje no encontrado', '#ef4444'); return false; }
+            const codigoCorrecto = viaje.codigos[pasajeroNombre];
+            if(codigoIngresado === codigoCorrecto) {
+                if(viaje.codigosPendientes) {
+                    const index = viaje.codigosPendientes.indexOf(pasajeroNombre);
+                    if(index !== -1) viaje.codigosPendientes.splice(index,1);
+                }
+                viaje.completado = true;
+                guardarViajes();
+                actualizarBadgePendientes();
+                mostrarToast(`✅ Viaje completado para ${pasajeroNombre}`, '#10b981');
+                return true;
+            }
+            mostrarToast(`❌ Código incorrecto para ${pasajeroNombre}`, '#ef4444');
+            return false;
+        }
+        
+        // ============ MODALES ============
+        function mostrarMisViajes() {
+            if(!usuarioActual) { mostrarToast('❌ Inicia sesión', '#ef4444'); return; }
+            const misViajes = viajes.filter(v => v.conductor === usuarioActual.nombre);
+            const viajesDondeVoy = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre));
+            const body = document.getElementById('misViajesBody');
+            body.innerHTML = `<div style="margin-bottom:20px;"><h4>🚗 Viajes que publiqué (${misViajes.length})</h4>${misViajes.length === 0 ? '<p class="empty-state">No has publicado viajes</p>' : misViajes.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Plazas reservadas: ${v.plazasReservadas}/${v.plazasOriginal}</div><div>Pasajeros: ${v.pasajeros && v.pasajeros.length > 0 ? v.pasajeros.join(', ') : 'Ninguno'}</div>${v.pasajeros && v.pasajeros.map(p => { const yaCalificado = yaCalificoPasajero(usuarioActual.nombre, p, v.id); const pendiente = v.codigosPendientes && v.codigosPendientes.includes(p); return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding:8px;background:#f3f4f6;border-radius:12px;"><span>${p}</span><div>${pendiente ? `<span class="codigo-reserva">Código: ${v.codigos[p]}</span><button class="btn-verificar" onclick="abrirVerificarCodigo(${v.id}, '${p}')">Verificar</button>` : '<span class="estado-completado" style="background:#d1fae5;color:#10b981;padding:2px 8px;border-radius:40px;">✓ Completado</span>'}${!yaCalificado && !pendiente ? `<button class="calificar-pasajero-btn" onclick="abrirModalCalificarPasajero('${p}', ${v.id})" style="margin-left:8px;">⭐ Calificar</button>` : ''}</div></div>`; }).join('')}<button class="btn-whatsapp-share" style="margin-top:8px;" onclick="compartirWhatsApp(${JSON.stringify(v).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>`).join('')}</div><div><h4>👤 Viajes que reservé (${viajesDondeVoy.length})</h4>${viajesDondeVoy.length === 0 ? '<p class="empty-state">No has reservado viajes</p>' : viajesDondeVoy.map(v => `<div class="trip-card" style="margin-bottom:12px;"><div><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha} ${v.hora ? v.hora : ''}</div><div>Conductor: ${v.conductor}</div><div>Precio: S/ ${v.precio}</div><div><span class="codigo-reserva">Tu código: ${v.codigos[usuarioActual.nombre]}</span></div></div>`).join('')}</div>`;
+            document.getElementById('misViajesModal').style.display = 'flex';
+        }
+        
+        function mostrarLogros() {
+            if(!usuarioActual) { mostrarToast('❌ Inicia sesión', '#ef4444'); return; }
+            const insignias = calcularInsignias(usuarioActual);
+            const rating = obtenerCalificacionConductor(usuarioActual.nombre);
+            const viajesConductor = viajes.filter(v => v.conductor === usuarioActual.nombre).length;
+            const viajesPasajero = viajes.filter(v => v.pasajeros && v.pasajeros.includes(usuarioActual.nombre)).length;
+            const body = document.getElementById('logrosBody');
+            body.innerHTML = `<div style="text-align:center;margin-bottom:20px;"><div class="stars">${renderStars(rating)}</div><p>⭐ Calificación: ${rating > 0 ? rating.toFixed(1) : 'Sin calificaciones'}</p><div class="stats-mini"><div class="stat-mini"><div class="stat-mini-value">${viajesConductor}</div><div class="stat-mini-label">Viajes conductor</div></div><div class="stat-mini"><div class="stat-mini-value">${viajesPasajero}</div><div class="stat-mini-label">Viajes pasajero</div></div></div></div><div class="badges-container">${insignias.length === 0 ? '<p class="empty-state">Sin insignias aún. ¡Sigue viajando!</p>' : insignias.map(i => `<div class="badge-item ${i.color}"><i class="fas fa-medal"></i> ${i.nombre}<small style="display:block;font-size:0.6rem;">${i.descripcion}</small></div>`).join('')}</div>`;
+            document.getElementById('logrosModal').style.display = 'flex';
+        }
+        
+        function abrirModalCalificarPasajero(pasajeroNombre, viajeId) {
+            const modal = document.getElementById('calificarPasajeroModal');
+            const body = document.getElementById('calificarPasajeroBody');
+            body.innerHTML = `<div style="text-align:center;"><p>Calificar a <strong>${escapeHtml(pasajeroNombre)}</strong></p><div class="rating-stars" id="ratingPasajeroStars"><i class="far fa-star" data-rating="1"></i><i class="far fa-star" data-rating="2"></i><i class="far fa-star" data-rating="3"></i><i class="far fa-star" data-rating="4"></i><i class="far fa-star" data-rating="5"></i></div><button class="btn-primary" id="btnEnviarCalificacionPasajero">Enviar calificación</button></div>`;
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                let rating = 0;
+                document.querySelectorAll('#ratingPasajeroStars i').forEach(star => { star.addEventListener('click', function() { rating = parseInt(this.dataset.rating); document.querySelectorAll('#ratingPasajeroStars i').forEach((s,i) => { s.className = i < rating ? 'fas fa-star' : 'far fa-star'; }); }); });
+                document.getElementById('btnEnviarCalificacionPasajero').addEventListener('click', () => { if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } calificarPasajero(usuarioActual.nombre, pasajeroNombre, viajeId, rating); cerrarCalificarPasajeroModal(); mostrarMisViajes(); });
+            }, 100);
+        }
+        
+        function abrirVerificarCodigo(viajeId, pasajeroNombre) {
+            const modal = document.getElementById('verificarCodigoModal');
+            const body = document.getElementById('verificarCodigoBody');
+            body.innerHTML = `<div style="text-align:center;"><p>Verificar código para <strong>${escapeHtml(pasajeroNombre)}</strong></p><input type="text" id="codigoInput" placeholder="Ingrese código de 6 dígitos" maxlength="6" style="width:100%;padding:12px;border-radius:16px;border:1px solid #e5e7eb;text-align:center;font-size:1.2rem;letter-spacing:4px;"><button class="btn-primary" id="btnVerificarCodigo" style="margin-top:16px;">Verificar</button></div>`;
+            modal.style.display = 'flex';
+            document.getElementById('btnVerificarCodigo').addEventListener('click', () => {
+                const codigo = document.getElementById('codigoInput').value;
+                if(codigo.length === 6) { completarViaje(viajeId, pasajeroNombre, codigo); cerrarVerificarCodigoModal(); mostrarMisViajes(); }
+                else mostrarToast('Ingrese un código de 6 dígitos', '#ef4444');
+            });
+        }
+        
+        function compartirWhatsApp(viaje) { const msg = `🚗 RideShare Perú%0A%0A📅 Viaje: ${viaje.origen} → ${viaje.destino}%0A📆 Fecha: ${viaje.fecha}${viaje.hora ? `%0A⏰ Hora: ${viaje.hora}` : ''}%0A💺 Plazas: ${viaje.plazasOriginal - viaje.plazasReservadas}/${viaje.plazasOriginal}%0A💰 Precio: S/ ${viaje.precio}%0A👤 Conductor: ${viaje.conductor}`; window.open(`https://wa.me/?text=${msg}`, '_blank'); }
+        
+        // ============ MODAL DETALLE ============
+        let mapaActual = null;
+        async function obtenerCoordenadas(ciudad) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ciudad + ', Perú')}&limit=1&countrycodes=pe`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } }); const d = await r.json(); if(d[0]) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) }; return null; } catch(e) { return null; } }
+        
+        async function abrirModal(index) {
+            const viaje = viajes[index];
+            if(!viaje) return;
+            const modal = document.getElementById('modal'); const modalBody = document.getElementById('modalBody');
+            const fechaFormateada = new Date(viaje.fecha).toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+            const rating = obtenerCalificacionConductor(viaje.conductor);
+            const plazasRestantes = viaje.plazasOriginal - viaje.plazasReservadas;
+            const yaCalificado = usuarioActual && calificaciones[viaje.conductor] && calificaciones[viaje.conductor].includes(viaje.id);
+            const osmLink = generarOSMLink(viaje.origen, viaje.destino);
+            modalBody.innerHTML = `<div style="text-align:center;"><div class="driver" style="justify-content:center;margin-bottom:20px;"><div class="driver-avatar">${viaje.conductor.charAt(0).toUpperCase()}</div><div class="driver-info"><h3>${escapeHtml(viaje.conductor)}</h3><div class="stars">${renderStars(rating)}</div></div></div><div style="background:#f3f4f6;border-radius:20px;padding:16px;margin:16px 0;"><div style="display:flex;justify-content:space-between;margin-bottom:16px;"><div><i class="fas fa-circle-dot" style="color:#2563eb;"></i><strong> Origen:</strong><br>${escapeHtml(viaje.origen)}</div><div><i class="fas fa-arrow-right"></i></div><div><i class="fas fa-flag-checkered" style="color:#2563eb;"></i><strong> Destino:</strong><br>${escapeHtml(viaje.destino)}</div></div><div><i class="fas fa-calendar"></i> <strong>Fecha:</strong> ${fechaFormateada}</div><div><i class="fas fa-clock"></i> <strong>Hora:</strong> ${viaje.hora || 'No especificada'}</div><div><i class="fas fa-chair"></i> <strong>Plazas:</strong> ${plazasRestantes} / ${viaje.plazasOriginal}</div><div><i class="fas fa-soles"></i> <strong>Precio:</strong> S/ ${viaje.precio}</div><div style="margin-top:12px;"><a href="${osmLink}" target="_blank" class="osm-link"><i class="fas fa-map-marked-alt"></i> Ver ruta en OpenStreetMap</a></div></div><div id="mapaViaje" class="map"></div><div style="margin-top:16px;"><button class="btn-whatsapp-share" onclick="compartirWhatsApp(${JSON.stringify(viaje).replace(/"/g, '&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>${usuarioActual && usuarioActual.nombre !== viaje.conductor && !yaCalificado && plazasRestantes < viaje.plazasOriginal ? `<div style="margin-top:20px;"><h4>Calificar a ${escapeHtml(viaje.conductor)}</h4><div class="rating-stars" id="ratingStarsModal"><i class="far fa-star" data-rating="1"></i><i class="far fa-star" data-rating="2"></i><i class="far fa-star" data-rating="3"></i><i class="far fa-star" data-rating="4"></i><i class="far fa-star" data-rating="5"></i></div><button class="btn-primary" id="enviarRating">Enviar calificación</button></div>` : (yaCalificado ? '<p style="margin-top:20px;">✅ Ya calificaste este viaje</p>' : '')}</div>`;
+            modal.style.display = 'flex';
+            setTimeout(async () => { if(mapaActual) mapaActual.remove(); const mapDiv = document.getElementById('mapaViaje'); if(mapDiv) { const coordsOrigen = await obtenerCoordenadas(viaje.origen); const coordsDestino = await obtenerCoordenadas(viaje.destino); const latCentro = coordsOrigen ? coordsOrigen.lat : -12.0464; const lonCentro = coordsOrigen ? coordsOrigen.lon : -77.0428; mapaActual = L.map(mapDiv).setView([latCentro, lonCentro], 7); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM' }).addTo(mapaActual); if(coordsOrigen) L.marker([coordsOrigen.lat, coordsOrigen.lon]).bindPopup(`<strong>Origen</strong><br>${viaje.origen}`).addTo(mapaActual); if(coordsDestino) L.marker([coordsDestino.lat, coordsDestino.lon]).bindPopup(`<strong>Destino</strong><br>${viaje.destino}`).addTo(mapaActual); } }, 100);
+            if(!yaCalificado && usuarioActual && usuarioActual.nombre !== viaje.conductor && plazasRestantes < viaje.plazasOriginal) { setTimeout(() => { let rating = 0; document.querySelectorAll('#ratingStarsModal i').forEach(star => { star.addEventListener('click', function() { rating = parseInt(this.dataset.rating); document.querySelectorAll('#ratingStarsModal i').forEach((s,i) => { s.className = i < rating ? 'fas fa-star' : 'far fa-star'; }); }); }); document.getElementById('enviarRating').addEventListener('click', () => { if(rating === 0) { mostrarToast('Selecciona una calificación', '#ef4444'); return; } if(!calificaciones[viaje.conductor]) calificaciones[viaje.conductor] = []; calificaciones[viaje.conductor].push(rating); guardarCalificaciones(); mostrarToast(`⭐ Calificaste a ${viaje.conductor} con ${rating} estrellas`, '#10b981'); cerrarModal(); aplicarFiltros(); }); }, 200); }
+        }
+        
+        // ============ AUTENTICACIÓN ============
+        function cargarUsuario() { const g = localStorage.getItem('currentUser'); if(g) { usuarioActual = JSON.parse(g); document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; document.getElementById('conductor').value = usuarioActual.nombre; document.getElementById('conductor').disabled = true; actualizarBadgePendientes(); } }
+        document.getElementById('loginBtn').addEventListener('click', () => { const nombre = prompt('Ingresa tu nombre:'); if(nombre && nombre.trim()) { usuarioActual = { nombre: nombre.trim(), id: Date.now() }; localStorage.setItem('currentUser', JSON.stringify(usuarioActual)); document.getElementById('userNameDisplay').innerText = usuarioActual.nombre; document.getElementById('conductor').value = usuarioActual.nombre; document.getElementById('conductor').disabled = true; mostrarToast(`✅ Bienvenido ${usuarioActual.nombre}!`, '#10b981'); actualizarBadgePendientes(); } });
+        document.getElementById('misViajesBtn').addEventListener('click', mostrarMisViajes);
+        document.getElementById('logrosBtn').addEventListener('click', mostrarLogros);
+        
+        function cerrarModal() { document.getElementById('modal').style.display = 'none'; if(mapaActual) { mapaActual.remove(); mapaActual = null; } }
+        function cerrarMisViajesModal() { document.getElementById('misViajesModal').style.display = 'none'; }
+        function cerrarLogrosModal() { document.getElementById('logrosModal').style.display = 'none'; }
+        function cerrarCalificarPasajeroModal() { document.getElementById('calificarPasajeroModal').style.display = 'none'; }
+        function cerrarVerificarCodigoModal() { document.getElementById('verificarCodigoModal').style.display = 'none'; }
+        
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function mostrarToast(m, c='#1f2937') { const t = document.getElementById('toast'); t.style.display = 'flex'; t.style.background = c; t.innerHTML = `<i class="fas ${c==='#10b981'?'fa-check-circle':(c==='#ef4444'?'fa-exclamation-circle':'fa-info-circle')}"></i> ${m}`; t.style.animation = 'slideUp 0.3s ease'; setTimeout(() => t.style.display = 'none', 4000); }
+        
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => { document.body.classList.toggle('dark'); const dark = document.body.classList.contains('dark'); themeToggle.innerHTML = dark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; localStorage.setItem('darkMode', dark); });
+        if(localStorage.getItem('darkMode') === 'true') { document.body.classList.add('dark'); themeToggle.innerHTML = '<i class="fas fa-sun"></i><span>Modo claro</span>'; }
+        
+        cargarUsuario();
+        cargarDatos();
+        
+        window.abrirModal = abrirModal;
+        window.cerrarModal = cerrarModal;
+        window.reservarViaje = reservarViaje;
+        window.editarViaje = editarViaje;
+        window.eliminarViaje = eliminarViaje;
+        window.seleccionarCiudad = seleccionarCiudad;
+        window.compartirWhatsApp = compartirWhatsApp;
+        window.abrirModalCalificarPasajero = abrirModalCalificarPasajero;
+        window.abrirVerificarCodigo = abrirVerificarCodigo;
+        window.cerrarMisViajesModal = cerrarMisViajesModal;
+        window.cerrarLogrosModal = cerrarLogrosModal;
+        window.cerrarCalificarPasajeroModal = cerrarCalificarPasajeroModal;
+        window.cerrarVerificarCodigoModal = cerrarVerificarCodigoModal;
+    </script>
+</body>
+</html>
