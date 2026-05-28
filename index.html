@@ -3,51 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>RideShare Perú - Carpooling moderno</title>
+    <title>RideShare Perú - Carpooling</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyCBS9ZlKuJHaN6jT5FSmTExHZHzIdxYAno",
-            authDomain: "rideshareperu.firebaseapp.com",
-            projectId: "rideshareperu",
-            storageBucket: "rideshareperu.firebasestorage.app",
-            messagingSenderId: "53229848342",
-            appId: "1:53229848342:web:52f2b0bed05db53bd07237",
-            measurementId: "G-1TZWNQN4S2"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        window.db = db;
-        window.auth = auth;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.getDocs = getDocs;
-        window.updateDoc = updateDoc;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.query = query;
-        window.orderBy = orderBy;
-        window.where = where;
-        window.onSnapshot = onSnapshot;
-        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
-        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
-        window.signOut = signOut;
-        window.onAuthStateChanged = onAuthStateChanged;
-        
-        console.log("✅ Firebase conectado");
-    </script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -85,18 +45,10 @@
         body.dark input, body.dark select { background: #374151; border-color: #4b5563; color: white; }
         input:focus, select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         
-        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 280px; overflow-y: auto; z-index: 1000; margin-top: 4px; display: none; }
-        body.dark .autocomplete-suggestions { background: #1f2937; border: 1px solid #374151; }
-        .autocomplete-suggestion { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
-        body.dark .autocomplete-suggestion { border-bottom-color: #374151; color: white; }
-        .autocomplete-suggestion:hover { background: #f3f4f6; }
         .row-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .row-3cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-        
         .btn-primary { width: 100%; background: linear-gradient(135deg, #2563eb, #06b6d4); color: white; border: none; padding: 14px; border-radius: 40px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(37,99,235,0.3); }
         .btn-secondary { background: #6b7280; }
-        .btn-warning { background: #f59e0b; }
         
         .filter-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
         .filter-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; }
@@ -112,26 +64,23 @@
         .trip-card:hover { transform: translateX(4px); border-color: #2563eb; }
         .trip-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; }
         .driver { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .driver-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 1.1rem; }
-        .driver-info h4 { font-weight: 600; margin-bottom: 2px; }
-        .stars { display: flex; gap: 2px; margin-top: 4px; }
-        .stars i { font-size: 0.7rem; color: #fbbf24; }
+        .driver-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #06b6d4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
         .seats-badge { background: #dbeafe; color: #2563eb; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; font-weight: 600; }
         .trip-route { margin: 14px 0; padding: 12px 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
-        .route-point { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .route-point { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
         .route-point i { width: 20px; color: #6b7280; }
-        .route-point strong { font-weight: 600; }
         .trip-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 12px; }
         .price { font-size: 1.5rem; font-weight: 700; color: #2563eb; }
         .price small { font-size: 0.8rem; font-weight: normal; color: #6b7280; }
-        .trip-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .btn-reserve { background: #2563eb; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .trip-actions { display: flex; gap: 8px; }
+        .btn-reserve { background: #2563eb; color: white; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; }
         .btn-edit { background: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
         .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
-        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; font-size: 0.75rem; }
+        .btn-whatsapp { background: #25D366; color: white; border: none; padding: 8px 12px; border-radius: 40px; cursor: pointer; }
         
         .vehiculo-info { background: #f3f4f6; border-radius: 16px; padding: 12px; margin-top: 12px; font-size: 0.8rem; }
         body.dark .vehiculo-info { background: #374151; }
+        .conductor-badge { background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 40px; font-size: 0.7rem; margin-left: 8px; }
         
         .empty-state { text-align: center; padding: 48px 20px; color: #9ca3af; }
         .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
@@ -147,10 +96,15 @@
         
         .badge-owned { background: #10b981; color: white; padding: 4px 8px; border-radius: 40px; font-size: 0.7rem; position: absolute; top: 12px; right: 12px; }
         .peru-flag { margin-left: 5px; font-size: 0.7rem; }
-        .conductor-badge { background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 40px; font-size: 0.6rem; margin-left: 8px; }
         
         .map { height: 200px; border-radius: 16px; margin-top: 16px; z-index: 1; }
         .loading-spinner { text-align: center; padding: 40px; }
+        .loading-spinner i { font-size: 2rem; color: #2563eb; }
+        
+        .autocomplete-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); max-height: 280px; overflow-y: auto; z-index: 1000; margin-top: 4px; display: none; }
+        body.dark .autocomplete-suggestions { background: #1f2937; border: 1px solid #374151; }
+        .autocomplete-suggestion { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px; }
+        .autocomplete-suggestion:hover { background: #f3f4f6; }
     </style>
 </head>
 <body>
@@ -163,7 +117,7 @@
             </div>
             <div class="user-controls" id="userControls" style="display: none;">
                 <span id="userNameDisplay" style="font-weight: 500;"></span>
-                <span id="userRoleBadge" class="conductor-badge" style="display: none;">Conductor</span>
+                <span id="userRoleBadge" class="conductor-badge" style="display: none;">🚗 Conductor</span>
                 <button class="btn-icon" id="misViajesBtn"><i class="fas fa-calendar-alt"></i><span>Mis viajes</span><span id="pendientesBadge" class="badge-notif" style="display:none;">0</span></button>
                 <button class="btn-icon" id="miPerfilBtn"><i class="fas fa-user"></i><span>Mi perfil</span></button>
                 <button class="btn-icon" id="logoutBtn"><i class="fas fa-sign-out-alt"></i><span>Salir</span></button>
@@ -176,7 +130,6 @@
             </div>
         </div>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <div id="mainContent"></div>
     </div>
 
@@ -191,212 +144,90 @@
 
     <div id="toast" class="toast"></div>
 
-    <script>
-        // ============ LISTA DE CIUDADES PERÚ ============
-        const ciudadesPeru = ["Lima","Arequipa","Trujillo","Chiclayo","Piura","Cusco","Iquitos","Huancayo","Chimbote","Pucallpa","Tacna","Ica","Juliaca","Sullana","Cajamarca","Ayacucho","Chincha Alta","Huánuco","Tarapoto","Puno","Tumbes","Huaraz","Moquegua","Pisco"];
-        let searchCache = new Map();
-        let currentTimeout = null;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBS9ZlKuJHaN6jT5FSmTExHZHzIdxYAno",
+            authDomain: "rideshareperu.firebaseapp.com",
+            projectId: "rideshareperu",
+            storageBucket: "rideshareperu.firebasestorage.app",
+            messagingSenderId: "53229848342",
+            appId: "1:53229848342:web:52f2b0bed05db53bd07237"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Variables globales
         let viajesGlobales = [];
         let unsubscribeViajes = null;
         let usuarioActual = null;
         let mapaActual = null;
-
-        // ============ AUTOCOMPLETADO ============
+        let currentTimeout = null;
+        
+        const ciudadesPeru = ["Lima","Arequipa","Trujillo","Chiclayo","Piura","Cusco","Iquitos","Huancayo","Chimbote","Pucallpa","Tacna","Ica","Juliaca","Sullana","Cajamarca","Ayacucho","Puno","Huaraz","Moquegua","Tumbes"];
+        
+        // Utilidades
+        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+        function mostrarToast(m, c='#1f2937') { const t = document.getElementById('toast'); t.style.display='flex'; t.style.background=c; t.innerHTML=`<i class="fas ${c==='#10b981'?'fa-check-circle':'fa-exclamation-circle'}"></i> ${m}`; setTimeout(()=>t.style.display='none',4000); }
+        function generarCodigo() { return Math.floor(100000 + Math.random() * 900000).toString(); }
+        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; if(id==='detalleModal' && mapaActual) { mapaActual.remove(); mapaActual=null; } }
+        
+        // Autocompletado
         async function buscarCiudades(query, inputId) {
             const div = document.getElementById(inputId + 'Suggestions');
             if (!query || query.length < 2) { if(div) div.style.display = 'none'; return; }
-            const cacheKey = query.toLowerCase();
-            if (searchCache.has(cacheKey)) { mostrarSugerencias(searchCache.get(cacheKey), div, inputId); return; }
             if(div) { div.innerHTML = '<div class="loading-suggestions">Buscando...</div>'; div.style.display = 'block'; }
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=8&countrycodes=pe`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } });
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&countrycodes=pe`, { headers: { 'User-Agent': 'RideShare/1.0' } });
                 const data = await res.json();
-                let resultados = data.length > 0 ? data.map(l => ({ nombre: l.display_name.split(',')[0].trim(), region: l.address?.state || 'Perú' })) : ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' }));
-                searchCache.set(cacheKey, resultados);
-                mostrarSugerencias(resultados, div, inputId);
-            } catch(e) { mostrarSugerencias(ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,8).map(c => ({ nombre: c, region: 'Perú' })), div, inputId); }
-        }
-        function mostrarSugerencias(resultados, div, inputId) { if(!div) return; if(resultados.length===0) { div.innerHTML='<div class="loading-suggestions">No encontrado</div>'; return; } div.innerHTML = resultados.map(l => `<div class="autocomplete-suggestion" onclick="seleccionarCiudad('${inputId}','${l.nombre}')"><i class="fas fa-map-marker-alt"></i><span>${l.nombre}</span><span class="suggestion-region">${l.region}</span></div>`).join(''); }
-        function seleccionarCiudad(inputId, ciudad) { document.getElementById(inputId).value = ciudad; const div = document.getElementById(inputId+'Suggestions'); if(div) div.style.display = 'none'; }
-        function setupAutocomplete(inputId) { const input = document.getElementById(inputId); if(!input) return; input.addEventListener('input', (e) => { if(currentTimeout) clearTimeout(currentTimeout); currentTimeout = setTimeout(() => buscarCiudades(e.target.value, inputId), 300); }); input.addEventListener('blur', () => setTimeout(() => { const div = document.getElementById(inputId+'Suggestions'); if(div) div.style.display = 'none'; }, 200)); }
-        
-        function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-        function mostrarToast(m, c='#1f2937') { const t = document.getElementById('toast'); t.style.display='flex'; t.style.background=c; t.innerHTML=`<i class="fas ${c==='#10b981'?'fa-check-circle':'fa-exclamation-circle'}"></i> ${m}`; t.style.animation='slideUp 0.3s ease'; setTimeout(()=>t.style.display='none',4000); }
-        function generarCodigo() { return Math.floor(100000 + Math.random() * 900000).toString(); }
-        function renderStars(rating) { let s=''; for(let i=1;i<=5;i++) s+= i<=Math.round(rating||0) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'; return s; }
-
-        // ============ FUNCIONES FIREBASE ============
-        async function cargarViajes() {
-            if (!window.db) return;
-            try {
-                const q = query(collection(window.db, "viajes"), orderBy("fecha", "asc"));
-                if (unsubscribeViajes) unsubscribeViajes();
-                unsubscribeViajes = onSnapshot(q, (snapshot) => {
-                    viajesGlobales = [];
-                    snapshot.forEach(doc => viajesGlobales.push({ id: doc.id, ...doc.data() }));
-                    aplicarFiltros();
-                    actualizarBadgePendientes();
-                });
+                const resultados = data.length > 0 ? data.map(l => ({ nombre: l.display_name.split(',')[0].trim() })) : ciudadesPeru.filter(c => c.toLowerCase().includes(query.toLowerCase())).slice(0,6).map(c => ({ nombre: c }));
+                if(div) div.innerHTML = resultados.map(l => `<div class="autocomplete-suggestion" onclick="window.seleccionarCiudad('${inputId}','${l.nombre}')"><i class="fas fa-map-marker-alt"></i> ${l.nombre}</div>`).join('');
             } catch(e) { console.error(e); }
         }
         
-        async function publicarViaje(data) { return await addDoc(collection(window.db, "viajes"), data); }
-        async function actualizarViaje(id, data) { await updateDoc(doc(window.db, "viajes", id), data); }
-        async function eliminarViaje(id) { await deleteDoc(doc(window.db, "viajes", id)); }
-        
-        async function obtenerUsuario(email) { const q = query(collection(window.db, "usuarios"), where("email", "==", email)); const snap = await getDocs(q); return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() }; }
-        async function guardarUsuario(data) { return await addDoc(collection(window.db, "usuarios"), data); }
-        async function actualizarUsuario(id, data) { await updateDoc(doc(window.db, "usuarios", id), data); }
-
-        // ============ AUTENTICACIÓN ============
-        window.onAuthStateChanged = async (auth, user) => {
-            if (user) {
-                const userData = await obtenerUsuario(user.email);
-                if (userData) {
-                    usuarioActual = { uid: user.uid, email: user.email, nombre: userData.nombre, telefono: userData.telefono, esConductor: userData.esConductor || false, vehiculo: userData.vehiculo };
-                } else {
-                    usuarioActual = { uid: user.uid, email: user.email, nombre: user.displayName || user.email.split('@')[0], esConductor: false };
-                }
-                actualizarUI();
-            } else {
-                usuarioActual = null;
-                actualizarUI();
-            }
-        };
-        
-        function actualizarUI() {
-            const loginControls = document.getElementById('loginControls');
-            const userControls = document.getElementById('userControls');
-            const userNameDisplay = document.getElementById('userNameDisplay');
-            const userRoleBadge = document.getElementById('userRoleBadge');
-            const publicarCard = document.getElementById('publicarCard');
-            
-            if (usuarioActual) {
-                loginControls.style.display = 'none';
-                userControls.style.display = 'flex';
-                userNameDisplay.innerHTML = `<i class="fas fa-user-circle"></i> ${usuarioActual.nombre}`;
-                if (usuarioActual.esConductor) {
-                    userRoleBadge.style.display = 'inline-block';
-                    userRoleBadge.innerHTML = '<i class="fas fa-car"></i> Conductor';
-                } else {
-                    userRoleBadge.style.display = 'none';
-                }
-                if (publicarCard) publicarCard.style.display = usuarioActual.esConductor ? 'block' : 'none';
-                cargarViajes();
-            } else {
-                loginControls.style.display = 'flex';
-                userControls.style.display = 'none';
-                if (publicarCard) publicarCard.style.display = 'none';
-                mostrarHomeSinSesion();
-            }
+        function setupAutocomplete(inputId) {
+            const input = document.getElementById(inputId);
+            if(!input) return;
+            input.addEventListener('input', (e) => { if(currentTimeout) clearTimeout(currentTimeout); currentTimeout = setTimeout(() => buscarCiudades(e.target.value, inputId), 300); });
+            input.addEventListener('blur', () => setTimeout(() => { const div = document.getElementById(inputId+'Suggestions'); if(div) div.style.display = 'none'; }, 200));
         }
         
-        function mostrarHomeSinSesion() {
-            const main = document.getElementById('mainContent');
-            main.innerHTML = `<div class="card"><div class="empty-state"><i class="fas fa-car-side"></i><p>Inicia sesión para ver viajes disponibles</p><button class="btn-primary" id="irALoginBtn" style="width:auto; margin-top:16px;">Iniciar sesión</button></div></div>`;
-            document.getElementById('irALoginBtn')?.addEventListener('click', () => abrirLoginModal());
+        window.seleccionarCiudad = (inputId, ciudad) => { document.getElementById(inputId).value = ciudad; const div = document.getElementById(inputId+'Suggestions'); if(div) div.style.display = 'none'; };
+        
+        // Funciones Firebase
+        async function obtenerUsuarioPorEmail(email) {
+            const q = query(collection(db, "usuarios"), where("email", "==", email));
+            const snap = await getDocs(q);
+            return snap.empty ? null : { id: snap.docs[0].id, ...snap.docs[0].data() };
         }
         
-        function abrirLoginModal() {
-            const modal = document.getElementById('loginModal');
-            const body = document.getElementById('loginModalBody');
-            body.innerHTML = `<div class="form-group"><label>Correo electrónico</label><input type="email" id="loginEmail" placeholder="tu@email.com"></div><div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" placeholder="••••••••"></div><button class="btn-primary" id="doLoginBtn">Iniciar sesión</button><div style="text-align:center; margin-top:16px;"><a href="#" id="goToRegisterLink">¿No tienes cuenta? Regístrate</a></div>`;
-            modal.style.display = 'flex';
-            document.getElementById('doLoginBtn').onclick = async () => {
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                try {
-                    await window.signInWithEmailAndPassword(window.auth, email, password);
-                    mostrarToast('✅ Sesión iniciada', '#10b981');
-                    cerrarModal('loginModal');
-                } catch(e) { mostrarToast('❌ ' + e.message, '#ef4444'); }
-            };
-            document.getElementById('goToRegisterLink').onclick = (e) => { e.preventDefault(); cerrarModal('loginModal'); abrirRegisterModal(); };
+        async function guardarUsuario(data) { return await addDoc(collection(db, "usuarios"), data); }
+        async function actualizarUsuario(id, data) { await updateDoc(doc(db, "usuarios", id), data); }
+        async function publicarViaje(data) { return await addDoc(collection(db, "viajes"), data); }
+        async function actualizarViaje(id, data) { await updateDoc(doc(db, "viajes", id), data); }
+        async function eliminarViaje(id) { await deleteDoc(doc(db, "viajes", id)); }
+        
+        // Cargar viajes en tiempo real
+        function cargarViajesRealtime() {
+            if (unsubscribeViajes) unsubscribeViajes();
+            const q = query(collection(db, "viajes"), orderBy("fecha", "asc"));
+            unsubscribeViajes = onSnapshot(q, (snapshot) => {
+                viajesGlobales = [];
+                snapshot.forEach(doc => viajesGlobales.push({ id: doc.id, ...doc.data() }));
+                aplicarFiltros();
+                actualizarBadgePendientes();
+            }, (error) => console.error("Error en snapshot:", error));
         }
         
-        function abrirRegisterModal() {
-            const modal = document.getElementById('registerModal');
-            const body = document.getElementById('registerModalBody');
-            body.innerHTML = `<div class="form-group"><label>Nombre completo</label><input type="text" id="regNombre" placeholder="Juan Perez"></div><div class="form-group"><label>Correo electrónico</label><input type="email" id="regEmail" placeholder="tu@email.com"></div><div class="form-group"><label>Teléfono / WhatsApp</label><input type="tel" id="regTelefono" placeholder="999 888 777"></div><div class="form-group"><label>Contraseña</label><input type="password" id="regPassword" placeholder="Mínimo 6 caracteres"></div><div class="form-group"><label>Confirmar contraseña</label><input type="password" id="regConfirm" placeholder="••••••••"></div><button class="btn-primary" id="doRegisterBtn">Crear cuenta</button><div style="text-align:center; margin-top:16px;"><a href="#" id="goToLoginLink">¿Ya tienes cuenta? Inicia sesión</a></div>`;
-            modal.style.display = 'flex';
-            document.getElementById('doRegisterBtn').onclick = async () => {
-                const nombre = document.getElementById('regNombre').value;
-                const email = document.getElementById('regEmail').value;
-                const telefono = document.getElementById('regTelefono').value;
-                const password = document.getElementById('regPassword').value;
-                const confirm = document.getElementById('regConfirm').value;
-                if (!nombre || !email || !telefono || !password) { mostrarToast('Complete todos los campos', '#ef4444'); return; }
-                if (password !== confirm) { mostrarToast('Contraseñas no coinciden', '#ef4444'); return; }
-                if (password.length < 6) { mostrarToast('Mínimo 6 caracteres', '#ef4444'); return; }
-                try {
-                    const userCred = await window.createUserWithEmailAndPassword(window.auth, email, password);
-                    await guardarUsuario({ uid: userCred.user.uid, nombre, email, telefono, esConductor: false, fechaRegistro: new Date().toISOString() });
-                    mostrarToast('✅ Cuenta creada', '#10b981');
-                    cerrarModal('registerModal');
-                    abrirRegistroConductorModal(userCred.user.uid, nombre, email, telefono);
-                } catch(e) { mostrarToast('❌ ' + e.message, '#ef4444'); }
-            };
-            document.getElementById('goToLoginLink').onclick = (e) => { e.preventDefault(); cerrarModal('registerModal'); abrirLoginModal(); };
-        }
-        
-        function abrirRegistroConductorModal(uid, nombre, email, telefono) {
-            const modal = document.getElementById('conductorModal');
-            const body = document.getElementById('conductorModalBody');
-            body.innerHTML = `<p style="margin-bottom:16px;">¿Quieres publicar viajes como conductor? Registra los datos de tu vehículo:</p>
-                <div class="row-2cols"><div><label>Placa</label><input type="text" id="vehPlaca" placeholder="ABC-123"></div><div><label>Marca</label><input type="text" id="vehMarca" placeholder="Toyota"></div></div>
-                <div class="row-2cols"><div><label>Modelo</label><input type="text" id="vehModelo" placeholder="Yaris"></div><div><label>Año</label><input type="number" id="vehAnio" placeholder="2020"></div></div>
-                <div class="row-2cols"><div><label>Color</label><input type="text" id="vehColor" placeholder="Rojo"></div><div><label>Tipo</label><select id="vehTipo"><option>Sedán</option><option>Hatchback</option><option>SUV</option><option>Camioneta</option></select></div></div>
-                <div style="display:flex; gap:12px; margin-top:20px;"><button class="btn-primary" id="skipConductorBtn" style="background:#6b7280;">Solo viajar</button><button class="btn-primary" id="saveConductorBtn">Registrar como conductor</button></div>`;
-            modal.style.display = 'flex';
-            document.getElementById('skipConductorBtn').onclick = () => { cerrarModal('conductorModal'); };
-            document.getElementById('saveConductorBtn').onclick = async () => {
-                const vehiculo = { placa: document.getElementById('vehPlaca').value, marca: document.getElementById('vehMarca').value, modelo: document.getElementById('vehModelo').value, anio: document.getElementById('vehAnio').value, color: document.getElementById('vehColor').value, tipo: document.getElementById('vehTipo').value };
-                const usuariosRef = collection(window.db, "usuarios");
-                const q = query(usuariosRef, where("email", "==", email));
-                const snap = await getDocs(q);
-                if (!snap.empty) { await updateDoc(doc(window.db, "usuarios", snap.docs[0].id), { esConductor: true, vehiculo }); }
-                mostrarToast('✅ Registrado como conductor', '#10b981');
-                cerrarModal('conductorModal');
-                if (usuarioActual) { usuarioActual.esConductor = true; usuarioActual.vehiculo = vehiculo; actualizarUI(); }
-            };
-        }
-        
-        async function actualizarPerfilConductor() {
-            const modal = document.getElementById('perfilModal');
-            const body = document.getElementById('perfilModalBody');
-            body.innerHTML = `<div style="text-align:center;"><h3>${usuarioActual.nombre}</h3><p>${usuarioActual.email}</p><p>📱 ${usuarioActual.telefono}</p><hr style="margin:16px 0;"><h4>🚗 Vehículo</h4><div class="row-2cols"><div><label>Placa</label><input type="text" id="vehPlaca" value="${usuarioActual.vehiculo?.placa || ''}" placeholder="ABC-123"></div><div><label>Marca</label><input type="text" id="vehMarca" value="${usuarioActual.vehiculo?.marca || ''}"></div></div>
-                <div class="row-2cols"><div><label>Modelo</label><input type="text" id="vehModelo" value="${usuarioActual.vehiculo?.modelo || ''}"></div><div><label>Año</label><input type="number" id="vehAnio" value="${usuarioActual.vehiculo?.anio || ''}"></div></div>
-                <div class="row-2cols"><div><label>Color</label><input type="text" id="vehColor" value="${usuarioActual.vehiculo?.color || ''}"></div><div><label>Tipo</label><select id="vehTipo"><option ${usuarioActual.vehiculo?.tipo==='Sedán'?'selected':''}>Sedán</option><option ${usuarioActual.vehiculo?.tipo==='Hatchback'?'selected':''}>Hatchback</option><option ${usuarioActual.vehiculo?.tipo==='SUV'?'selected':''}>SUV</option><option ${usuarioActual.vehiculo?.tipo==='Camioneta'?'selected':''}>Camioneta</option></select></div></div>
-                <button class="btn-primary" id="guardarPerfilBtn">Guardar cambios</button>${!usuarioActual.esConductor ? `<button class="btn-primary btn-warning" id="registrarConductorBtn" style="margin-top:12px;">Registrarme como conductor</button>` : ''}
-                <button class="btn-secondary" id="cerrarPerfilBtn" style="margin-top:12px;">Cerrar</button>`;
-            modal.style.display = 'flex';
-            document.getElementById('guardarPerfilBtn').onclick = async () => {
-                const vehiculo = { placa: document.getElementById('vehPlaca').value, marca: document.getElementById('vehMarca').value, modelo: document.getElementById('vehModelo').value, anio: document.getElementById('vehAnio').value, color: document.getElementById('vehColor').value, tipo: document.getElementById('vehTipo').value };
-                const q = query(collection(window.db, "usuarios"), where("email", "==", usuarioActual.email));
-                const snap = await getDocs(q);
-                if (!snap.empty) await updateDoc(doc(window.db, "usuarios", snap.docs[0].id), { vehiculo, esConductor: true });
-                usuarioActual.vehiculo = vehiculo;
-                usuarioActual.esConductor = true;
-                mostrarToast('✅ Perfil actualizado', '#10b981');
-                cerrarModal('perfilModal');
-                actualizarUI();
-            };
-            document.getElementById('registrarConductorBtn')?.addEventListener('click', async () => {
-                const q = query(collection(window.db, "usuarios"), where("email", "==", usuarioActual.email));
-                const snap = await getDocs(q);
-                if (!snap.empty) await updateDoc(doc(window.db, "usuarios", snap.docs[0].id), { esConductor: true });
-                usuarioActual.esConductor = true;
-                mostrarToast('✅ Ahora eres conductor', '#10b981');
-                cerrarModal('perfilModal');
-                actualizarUI();
-            });
-            document.getElementById('cerrarPerfilBtn').onclick = () => cerrarModal('perfilModal');
-        }
-        
-        // ============ VIAJES ============
+        // UI: mostrar viajes
         function aplicarFiltros() {
-            const filtroOrigen = document.getElementById('filtroOrigen')?.value.toLowerCase() || '';
-            const filtroDestino = document.getElementById('filtroDestino')?.value.toLowerCase() || '';
+            const filtroOrigen = document.getElementById('filtroOrigen')?.value?.toLowerCase() || '';
+            const filtroDestino = document.getElementById('filtroDestino')?.value?.toLowerCase() || '';
             const filtroFecha = document.getElementById('filtroFecha')?.value || '';
             let filtrados = [...viajesGlobales];
             if(filtroOrigen) filtrados = filtrados.filter(v => v.origen?.toLowerCase().includes(filtroOrigen));
@@ -413,11 +244,10 @@
             contenedor.innerHTML = lista.map(v => {
                 const fecha = new Date(v.fecha).toLocaleDateString('es-ES', { day:'numeric', month:'long' });
                 const plazas = v.plazasOriginal - (v.plazasReservadas||0);
-                const rating = 0;
                 const esPropietario = usuarioActual && v.conductor === usuarioActual.nombre;
                 const yaReservado = usuarioActual && v.pasajeros?.includes(usuarioActual.nombre);
                 return `<div class="trip-card" onclick="verDetalleViaje('${v.id}')">${esPropietario ? '<div class="badge-owned">Tu viaje</div>' : ''}
-                    <div class="trip-header"><div class="driver"><div class="driver-avatar">${v.conductor?.charAt(0) || 'U'}</div><div><strong>${escapeHtml(v.conductor || 'Conductor')}</strong><div class="stars">${renderStars(rating)}</div></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazas}/${v.plazasOriginal} plazas</div></div>
+                    <div class="trip-header"><div class="driver"><div class="driver-avatar">${v.conductor?.charAt(0) || 'U'}</div><div><strong>${escapeHtml(v.conductor || 'Conductor')}</strong></div></div><div class="seats-badge"><i class="fas fa-chair"></i> ${plazas}/${v.plazasOriginal}</div></div>
                     <div class="trip-route"><div class="route-point"><i class="fas fa-circle-dot"></i><strong>${escapeHtml(v.origen)}</strong></div><div class="route-point"><i class="fas fa-arrow-down"></i><strong>${escapeHtml(v.destino)}</strong></div></div>
                     <div class="trip-footer"><div><div>📅 ${fecha} ${v.hora ? `⏰ ${v.hora}` : ''}</div><div class="price">S/ ${v.precio}<small> por persona</small></div></div>
                     <div class="trip-actions">${!esPropietario && !yaReservado && plazas>0 && usuarioActual ? `<button class="btn-reserve" onclick="event.stopPropagation(); reservarViaje('${v.id}')">Reservar</button>` : (yaReservado ? '<span class="seats-badge">✓ Reservado</span>' : '')}
@@ -426,39 +256,8 @@
             }).join('');
         }
         
-        function mostrarHomeConViajes() {
-            const main = document.getElementById('mainContent');
-            const hoy = new Date().toISOString().split('T')[0];
-            main.innerHTML = `<div class="dashboard"><div class="card" id="publicarCard" style="display:${usuarioActual?.esConductor ? 'block' : 'none'}"><div class="card-title"><i class="fas fa-plus-circle"></i><span>Publicar nuevo viaje</span></div>
-                <form id="formViaje"><div class="form-group"><label>Tu nombre</label><div class="input-icon"><i class="fas fa-user"></i><input type="text" id="conductor" value="${usuarioActual?.nombre || ''}" readonly style="background:#e5e7eb;"></div></div>
-                <div class="row-2cols"><div class="form-group" id="origenGroup"><label>Origen</label><div class="input-icon"><i class="fas fa-circle-dot"></i><input type="text" id="origen" placeholder="Lima" required autocomplete="off"></div><div id="origenSuggestions" class="autocomplete-suggestions"></div></div>
-                <div class="form-group" id="destinoGroup"><label>Destino</label><div class="input-icon"><i class="fas fa-flag-checkered"></i><input type="text" id="destino" placeholder="Arequipa" required autocomplete="off"></div><div id="destinoSuggestions" class="autocomplete-suggestions"></div></div></div>
-                <div class="row-2cols"><div class="form-group"><label>Fecha</label><input type="date" id="fecha" min="${hoy}" required></div><div class="form-group"><label>Hora</label><input type="time" id="hora" required></div></div>
-                <div class="row-2cols"><div class="form-group"><label>Plazas</label><input type="number" id="plazas" min="1" max="8" value="3"></div><div class="form-group"><label>Precio (S/.)</label><input type="number" id="precio" min="0" placeholder="50"></div></div>
-                ${usuarioActual?.vehiculo ? `<div class="vehiculo-info"><i class="fas fa-car"></i> Tu vehículo: ${usuarioActual.vehiculo.marca} ${usuarioActual.vehiculo.modelo} (${usuarioActual.vehiculo.placa})</div>` : `<div class="vehiculo-info" style="background:#fee2e2;"><i class="fas fa-exclamation-triangle"></i> Para publicar viajes debes registrar tu vehículo en <strong>Mi perfil</strong></div>`}
-                <button type="submit" class="btn-primary" ${!usuarioActual?.vehiculo ? 'disabled style="opacity:0.5;"' : ''}>Publicar viaje</button></form></div>
-                <div class="card"><div class="card-title"><i class="fas fa-list-ul"></i><span>Viajes disponibles</span></div>
-                <div class="filter-section"><div class="filter-row"><input type="text" id="filtroOrigen" placeholder="Origen"><input type="text" id="filtroDestino" placeholder="Destino"><input type="date" id="filtroFecha"></div></div>
-                <div id="listaViajes" class="trips-list"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Cargando...</div></div></div></div>`;
-            document.getElementById('formViaje')?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if (!usuarioActual?.vehiculo) { mostrarToast('❌ Registra tu vehículo en Mi perfil', '#ef4444'); return; }
-                const nuevo = { conductor: usuarioActual.nombre, conductorEmail: usuarioActual.email, origen: document.getElementById('origen').value, destino: document.getElementById('destino').value, fecha: document.getElementById('fecha').value, hora: document.getElementById('hora').value, plazasOriginal: parseInt(document.getElementById('plazas').value), plazasReservadas: 0, precio: parseInt(document.getElementById('precio').value), pasajeros: [], codigos: {}, codigosPendientes: [], vehiculoConductor: usuarioActual.vehiculo, fechaPublicacion: new Date().toISOString() };
-                if(!nuevo.origen || !nuevo.destino) { mostrarToast('Complete los campos', '#ef4444'); return; }
-                await publicarViaje(nuevo);
-                mostrarToast('✅ Viaje publicado', '#10b981');
-                document.getElementById('formViaje').reset();
-                document.getElementById('fecha').min = hoy;
-                aplicarFiltros();
-            });
-            setupAutocomplete('origen'); setupAutocomplete('destino');
-            document.getElementById('filtroOrigen').addEventListener('input', aplicarFiltros);
-            document.getElementById('filtroDestino').addEventListener('input', aplicarFiltros);
-            document.getElementById('filtroFecha').addEventListener('change', aplicarFiltros);
-            aplicarFiltros();
-        }
-        
-        async function reservarViaje(id) {
+        // Acciones de viajes
+        window.reservarViaje = async (id) => {
             if(!usuarioActual) { mostrarToast('Inicia sesión', '#ef4444'); return; }
             const viaje = viajesGlobales.find(v => v.id === id);
             if(!viaje || viaje.plazasReservadas >= viaje.plazasOriginal) { mostrarToast('Sin plazas', '#ef4444'); return; }
@@ -466,15 +265,15 @@
             const codigo = generarCodigo();
             await actualizarViaje(id, { plazasReservadas: viaje.plazasReservadas+1, plazas: viaje.plazasOriginal - (viaje.plazasReservadas+1), pasajeros: [...(viaje.pasajeros||[]), usuarioActual.nombre], codigos: { ...(viaje.codigos||{}), [usuarioActual.nombre]: codigo }, codigosPendientes: [...(viaje.codigosPendientes||[]), usuarioActual.nombre] });
             mostrarToast(`✅ Reservado. Código: ${codigo}`, '#10b981');
-        }
+        };
         
-        async function editarViaje(id) { const v = viajesGlobales.find(v => v.id === id); if(!v) return; const o = prompt('Nuevo origen:', v.origen); const d = prompt('Nuevo destino:', v.destino); const p = prompt('Nuevo precio:', v.precio); if(o) v.origen = o; if(d) v.destino = d; if(p && !isNaN(p)) v.precio = parseInt(p); await actualizarViaje(id, { origen: v.origen, destino: v.destino, precio: v.precio }); mostrarToast('✅ Viaje actualizado', '#10b981'); }
-        async function eliminarViaje(id) { if(confirm('¿Eliminar?')) { await eliminarViaje(id); mostrarToast('Viaje eliminado', '#ef4444'); } }
+        window.editarViaje = async (id) => { const v = viajesGlobales.find(v => v.id === id); if(!v) return; const o = prompt('Nuevo origen:', v.origen); const d = prompt('Nuevo destino:', v.destino); const p = prompt('Nuevo precio:', v.precio); if(o) v.origen = o; if(d) v.destino = d; if(p && !isNaN(p)) v.precio = parseInt(p); await actualizarViaje(id, { origen: v.origen, destino: v.destino, precio: v.precio }); mostrarToast('✅ Viaje actualizado', '#10b981'); };
         
-        async function verDetalleViaje(id) {
+        window.eliminarViaje = async (id) => { if(confirm('¿Eliminar?')) { await eliminarViaje(id); mostrarToast('Viaje eliminado', '#ef4444'); } };
+        
+        window.verDetalleViaje = async (id) => {
             const v = viajesGlobales.find(v => v.id === id);
             if(!v) return;
-            const yaCalificado = false;
             const modal = document.getElementById('detalleModal');
             const body = document.getElementById('detalleBody');
             body.innerHTML = `<div style="text-align:center;"><div class="driver" style="justify-content:center;"><div class="driver-avatar">${v.conductor?.charAt(0)}</div><div><h3>${v.conductor}</h3>${v.vehiculoConductor ? `<p><i class="fas fa-car"></i> ${v.vehiculoConductor.marca} ${v.vehiculoConductor.modelo} (${v.vehiculoConductor.placa})</p>` : ''}</div></div>
@@ -483,46 +282,226 @@
                 <button class="btn-whatsapp" style="margin-top:16px;" onclick="compartirWhatsApp(${JSON.stringify(v).replace(/"/g,'&quot;')})"><i class="fab fa-whatsapp"></i> Compartir viaje</button></div>`;
             modal.style.display = 'flex';
             setTimeout(async () => { if(mapaActual) mapaActual.remove(); const mapDiv = document.getElementById('mapaViaje'); if(mapDiv) { try { const o = await obtenerCoordenadas(v.origen); const d = await obtenerCoordenadas(v.destino); mapaActual = L.map(mapDiv).setView([o?.lat || -12.0464, o?.lon || -77.0428], 7); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OSM' }).addTo(mapaActual); if(o) L.marker([o.lat, o.lon]).bindPopup(`Origen: ${v.origen}`).addTo(mapaActual); if(d) L.marker([d.lat, d.lon]).bindPopup(`Destino: ${v.destino}`).addTo(mapaActual); } catch(e){} } }, 100);
-        }
+        };
         
-        async function obtenerCoordenadas(ciudad) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ciudad+', Perú')}&limit=1`, { headers: { 'User-Agent': 'RideSharePeru/1.0' } }); const d = await r.json(); if(d[0]) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) }; return null; } catch(e) { return null; } }
+        async function obtenerCoordenadas(ciudad) { try { const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(ciudad+', Perú')}&limit=1`, { headers: { 'User-Agent': 'RideShare/1.0' } }); const d = await r.json(); if(d[0]) return { lat: parseFloat(d[0].lat), lon: parseFloat(d[0].lon) }; return null; } catch(e) { return null; } }
         
-        function compartirWhatsApp(v) { window.open(`https://wa.me/?text=${encodeURIComponent(`🚗 RideShare Perú%0A📅 Viaje: ${v.origen} → ${v.destino}%0A📆 Fecha: ${v.fecha}%0A💰 Precio: S/ ${v.precio}%0A👤 Conductor: ${v.conductor}`)}`, '_blank'); }
+        window.compartirWhatsApp = (v) => { window.open(`https://wa.me/?text=${encodeURIComponent(`🚗 RideShare Perú%0A📅 Viaje: ${v.origen} → ${v.destino}%0A📆 Fecha: ${v.fecha}%0A💰 Precio: S/ ${v.precio}%0A👤 Conductor: ${v.conductor}`)}`, '_blank'); };
         
         function actualizarBadgePendientes() { const badge = document.getElementById('pendientesBadge'); if(!usuarioActual?.esConductor) { if(badge) badge.style.display='none'; return; } const pendientes = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre && v.codigosPendientes?.length > 0).length; if(badge) { if(pendientes>0) { badge.style.display='inline-block'; badge.textContent=pendientes; } else badge.style.display='none'; } }
         
-        async function mostrarMisViajes() { if(!usuarioActual) return; const misViajes = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre); const reservados = viajesGlobales.filter(v => v.pasajeros?.includes(usuarioActual.nombre)); const body = document.getElementById('misViajesBody'); body.innerHTML = `<h4>🚗 Viajes que publiqué (${misViajes.length})</h4>${misViajes.length===0?'<p>No has publicado viajes</p>':misViajes.map(v => `<div class="trip-card"><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha}<br>Pasajeros: ${v.pasajeros?.length||0}/${v.plazasOriginal}<br>${v.pasajeros?.map(p => `<div>${p} ${v.codigosPendientes?.includes(p) ? `<button class="btn-verificar" onclick="abrirVerificar('${v.id}','${p}')" style="background:#8b5cf6;color:white;border:none;padding:2px 8px;border-radius:40px;">Verificar código</button>` : '<span style="color:#10b981;">✓ Completado</span>'}</div>`).join('')}</div>`).join('')}<hr><h4>👤 Viajes que reservé (${reservados.length})</h4>${reservados.length===0?'<p>No has reservado viajes</p>':reservados.map(v => `<div class="trip-card"><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha}<br>Conductor: ${v.conductor}<br>Código: ${v.codigos?.[usuarioActual.nombre] || 'No disponible'}</div>`).join('')}`;
-            document.getElementById('misViajesModal').style.display = 'flex'; }
-        
-        async function abrirVerificar(id, pasajero) { const modal = document.getElementById('verificarModal'); const body = document.getElementById('verificarBody'); body.innerHTML = `<p>Verificar código para <strong>${pasajero}</strong></p><input type="text" id="codigoInput" maxlength="6" placeholder="Código de 6 dígitos" style="width:100%;padding:12px;margin:12px 0;border-radius:16px;"><button class="btn-primary" id="confirmarVerificar">Verificar</button>`; modal.style.display='flex'; document.getElementById('confirmarVerificar').onclick = async () => { const codigo = document.getElementById('codigoInput').value; const viaje = viajesGlobales.find(v => v.id === id); if(viaje?.codigos?.[pasajero] === codigo) { const nuevos = viaje.codigosPendientes.filter(p => p !== pasajero); await actualizarViaje(id, { codigosPendientes: nuevos }); mostrarToast('✅ Viaje completado', '#10b981'); cerrarModal('verificarModal'); mostrarMisViajes(); } else mostrarToast('❌ Código incorrecto', '#ef4444'); }; }
-        
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; if(id==='detalleModal' && mapaActual) { mapaActual.remove(); mapaActual=null; } }
-        
-        // ============ INICIALIZAR ============
-        function init() {
+        // UI Principal
+        function mostrarHome() {
             const main = document.getElementById('mainContent');
-            main.innerHTML = `<div class="card"><div class="empty-state"><i class="fas fa-car-side"></i><p>Cargando...</p></div></div>`;
-            document.getElementById('showLoginBtn').onclick = () => abrirLoginModal();
-            document.getElementById('showRegisterBtn').onclick = () => abrirRegisterModal();
-            document.getElementById('logoutBtn').onclick = async () => { await window.signOut(window.auth); mostrarToast('Sesión cerrada', '#f59e0b'); };
-            document.getElementById('miPerfilBtn').onclick = () => actualizarPerfilConductor();
-            document.getElementById('misViajesBtn').onclick = () => mostrarMisViajes();
-            document.getElementById('goHomeBtn').onclick = () => { if(usuarioActual) mostrarHomeConViajes(); else mostrarHomeSinSesion(); };
-            const toggle = document.getElementById('themeToggle');
-            const toggle2 = document.getElementById('themeToggle2');
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            if(darkMode) document.body.classList.add('dark');
-            const setDark = () => { const isDark = document.body.classList.contains('dark'); localStorage.setItem('darkMode', isDark); toggle.innerHTML = isDark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; if(toggle2) toggle2.innerHTML = isDark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; };
-            toggle.onclick = () => { document.body.classList.toggle('dark'); setDark(); };
-            if(toggle2) toggle2.onclick = () => { document.body.classList.toggle('dark'); setDark(); };
-            setDark();
-            window.onAuthStateChanged(window.auth, (user) => {
-                if (user) { (async () => { const userData = await obtenerUsuario(user.email); if(userData) usuarioActual = { uid: user.uid, email: user.email, nombre: userData.nombre, telefono: userData.telefono, esConductor: userData.esConductor || false, vehiculo: userData.vehiculo }; else usuarioActual = { uid: user.uid, email: user.email, nombre: user.email.split('@')[0], esConductor: false }; actualizarUI(); if(usuarioActual) mostrarHomeConViajes(); })(); }
-                else { usuarioActual = null; actualizarUI(); }
+            const hoy = new Date().toISOString().split('T')[0];
+            main.innerHTML = `<div class="dashboard"><div class="card" id="publicarCard"><div class="card-title"><i class="fas fa-plus-circle"></i><span>Publicar nuevo viaje</span></div>
+                <form id="formViaje"><div class="form-group"><label>Tu nombre</label><div class="input-icon"><i class="fas fa-user"></i><input type="text" id="conductor" value="${usuarioActual?.nombre || ''}" readonly style="background:#e5e7eb;"></div></div>
+                <div class="row-2cols"><div class="form-group" id="origenGroup"><label>Origen</label><div class="input-icon"><i class="fas fa-circle-dot"></i><input type="text" id="origen" placeholder="Lima" autocomplete="off"></div><div id="origenSuggestions" class="autocomplete-suggestions"></div></div>
+                <div class="form-group" id="destinoGroup"><label>Destino</label><div class="input-icon"><i class="fas fa-flag-checkered"></i><input type="text" id="destino" placeholder="Arequipa" autocomplete="off"></div><div id="destinoSuggestions" class="autocomplete-suggestions"></div></div></div>
+                <div class="row-2cols"><div class="form-group"><label>Fecha</label><input type="date" id="fecha" min="${hoy}"></div><div class="form-group"><label>Hora</label><input type="time" id="hora"></div></div>
+                <div class="row-2cols"><div class="form-group"><label>Plazas</label><input type="number" id="plazas" min="1" max="8" value="3"></div><div class="form-group"><label>Precio (S/.)</label><input type="number" id="precio" min="0" placeholder="50"></div></div>
+                ${usuarioActual?.vehiculo ? `<div class="vehiculo-info"><i class="fas fa-car"></i> ${usuarioActual.vehiculo.marca} ${usuarioActual.vehiculo.modelo} (${usuarioActual.vehiculo.placa})</div>` : `<div class="vehiculo-info" style="background:#fee2e2;"><i class="fas fa-exclamation-triangle"></i> Para publicar viajes, registra tu vehículo en <strong>Mi perfil</strong></div>`}
+                <button type="submit" class="btn-primary" ${!usuarioActual?.vehiculo ? 'disabled style="opacity:0.5;"' : ''}>Publicar viaje</button></form></div>
+                <div class="card"><div class="card-title"><i class="fas fa-list-ul"></i><span>Viajes disponibles</span></div>
+                <div class="filter-section"><div class="filter-row"><input type="text" id="filtroOrigen" placeholder="Origen"><input type="text" id="filtroDestino" placeholder="Destino"><input type="date" id="filtroFecha"></div></div>
+                <div id="listaViajes" class="trips-list"><div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Cargando viajes...</div></div></div></div>`;
+            
+            document.getElementById('formViaje')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!usuarioActual?.vehiculo) { mostrarToast('❌ Registra tu vehículo en Mi perfil', '#ef4444'); return; }
+                const nuevo = { conductor: usuarioActual.nombre, conductorEmail: usuarioActual.email, origen: document.getElementById('origen').value, destino: document.getElementById('destino').value, fecha: document.getElementById('fecha').value, hora: document.getElementById('hora').value, plazasOriginal: parseInt(document.getElementById('plazas').value), plazasReservadas: 0, precio: parseInt(document.getElementById('precio').value), pasajeros: [], codigos: {}, codigosPendientes: [], vehiculoConductor: usuarioActual.vehiculo, fechaPublicacion: new Date().toISOString() };
+                if(!nuevo.origen || !nuevo.destino || !nuevo.fecha) { mostrarToast('Complete los campos', '#ef4444'); return; }
+                await publicarViaje(nuevo);
+                mostrarToast('✅ Viaje publicado', '#10b981');
+                document.getElementById('formViaje').reset();
+                document.getElementById('fecha').min = hoy;
             });
+            setupAutocomplete('origen'); setupAutocomplete('destino');
+            document.getElementById('filtroOrigen').addEventListener('input', aplicarFiltros);
+            document.getElementById('filtroDestino').addEventListener('input', aplicarFiltros);
+            document.getElementById('filtroFecha').addEventListener('change', aplicarFiltros);
+            aplicarFiltros();
+            const publicarCard = document.getElementById('publicarCard');
+            if(publicarCard) publicarCard.style.display = usuarioActual?.esConductor ? 'block' : 'none';
         }
-        init();
-        window.seleccionarCiudad = seleccionarCiudad;
+        
+        function mostrarHomeSinSesion() {
+            const main = document.getElementById('mainContent');
+            main.innerHTML = `<div class="card"><div class="empty-state"><i class="fas fa-car-side"></i><p>Inicia sesión para ver viajes disponibles</p><button class="btn-primary" id="irALoginBtn" style="width:auto; margin-top:16px;">Iniciar sesión</button></div></div>`;
+            document.getElementById('irALoginBtn')?.addEventListener('click', () => abrirLoginModal());
+        }
+        
+        // Modales de autenticación
+        function abrirLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const body = document.getElementById('loginModalBody');
+            body.innerHTML = `<div class="form-group"><label>Correo</label><input type="email" id="loginEmail" placeholder="tu@email.com"></div><div class="form-group"><label>Contraseña</label><input type="password" id="loginPassword" placeholder="••••••••"></div><button class="btn-primary" id="doLoginBtn">Iniciar sesión</button><div style="text-align:center; margin-top:16px;"><a href="#" id="goToRegisterLink">¿No tienes cuenta? Regístrate</a></div>`;
+            modal.style.display = 'flex';
+            document.getElementById('doLoginBtn').onclick = async () => {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                try { await signInWithEmailAndPassword(auth, email, password); mostrarToast('✅ Bienvenido', '#10b981'); cerrarModal('loginModal'); } catch(e) { mostrarToast('❌ ' + e.message, '#ef4444'); }
+            };
+            document.getElementById('goToRegisterLink').onclick = (e) => { e.preventDefault(); cerrarModal('loginModal'); abrirRegisterModal(); };
+        }
+        
+        function abrirRegisterModal() {
+            const modal = document.getElementById('registerModal');
+            const body = document.getElementById('registerModalBody');
+            body.innerHTML = `<div class="form-group"><label>Nombre</label><input type="text" id="regNombre"></div><div class="form-group"><label>Correo</label><input type="email" id="regEmail"></div><div class="form-group"><label>Teléfono</label><input type="tel" id="regTelefono"></div><div class="form-group"><label>Contraseña</label><input type="password" id="regPassword"></div><div class="form-group"><label>Confirmar</label><input type="password" id="regConfirm"></div><button class="btn-primary" id="doRegisterBtn">Registrarse</button><div style="text-align:center; margin-top:16px;"><a href="#" id="goToLoginLink">¿Ya tienes cuenta? Inicia sesión</a></div>`;
+            modal.style.display = 'flex';
+            document.getElementById('doRegisterBtn').onclick = async () => {
+                const nombre = document.getElementById('regNombre').value;
+                const email = document.getElementById('regEmail').value;
+                const telefono = document.getElementById('regTelefono').value;
+                const password = document.getElementById('regPassword').value;
+                const confirm = document.getElementById('regConfirm').value;
+                if(!nombre || !email || !telefono || !password) { mostrarToast('Complete todos', '#ef4444'); return; }
+                if(password !== confirm) { mostrarToast('Contraseñas no coinciden', '#ef4444'); return; }
+                if(password.length < 6) { mostrarToast('Mínimo 6 caracteres', '#ef4444'); return; }
+                try {
+                    const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                    await guardarUsuario({ uid: userCred.user.uid, nombre, email, telefono, esConductor: false, fechaRegistro: new Date().toISOString() });
+                    mostrarToast('✅ Cuenta creada', '#10b981');
+                    cerrarModal('registerModal');
+                    setTimeout(() => abrirRegistroVehiculoModal(userCred.user.uid, nombre, email, telefono), 500);
+                } catch(e) { mostrarToast('❌ ' + e.message, '#ef4444'); }
+            };
+            document.getElementById('goToLoginLink').onclick = (e) => { e.preventDefault(); cerrarModal('registerModal'); abrirLoginModal(); };
+        }
+        
+        function abrirRegistroVehiculoModal(uid, nombre, email, telefono) {
+            const modal = document.getElementById('conductorModal');
+            const body = document.getElementById('conductorModalBody');
+            body.innerHTML = `<p>¿Quieres publicar viajes? Registra tu vehículo (opcional):</p>
+                <div class="row-2cols"><div><label>Placa</label><input type="text" id="vehPlaca" placeholder="ABC-123"></div><div><label>Marca</label><input type="text" id="vehMarca" placeholder="Toyota"></div></div>
+                <div class="row-2cols"><div><label>Modelo</label><input type="text" id="vehModelo" placeholder="Yaris"></div><div><label>Año</label><input type="number" id="vehAnio" placeholder="2020"></div></div>
+                <div class="row-2cols"><div><label>Color</label><input type="text" id="vehColor" placeholder="Rojo"></div><div><label>Tipo</label><select id="vehTipo"><option>Sedán</option><option>SUV</option><option>Camioneta</option></select></div></div>
+                <div style="display:flex; gap:12px; margin-top:20px;"><button class="btn-primary" id="skipVehiculoBtn" style="background:#6b7280;">Solo viajar</button><button class="btn-primary" id="saveVehiculoBtn">Ser conductor</button></div>`;
+            modal.style.display = 'flex';
+            document.getElementById('skipVehiculoBtn').onclick = () => { cerrarModal('conductorModal'); };
+            document.getElementById('saveVehiculoBtn').onclick = async () => {
+                const vehiculo = { placa: document.getElementById('vehPlaca').value, marca: document.getElementById('vehMarca').value, modelo: document.getElementById('vehModelo').value, anio: document.getElementById('vehAnio').value, color: document.getElementById('vehColor').value, tipo: document.getElementById('vehTipo').value };
+                const q = query(collection(db, "usuarios"), where("email", "==", email));
+                const snap = await getDocs(q);
+                if (!snap.empty) { await updateDoc(doc(db, "usuarios", snap.docs[0].id), { esConductor: true, vehiculo }); }
+                mostrarToast('✅ Ahora eres conductor', '#10b981');
+                cerrarModal('conductorModal');
+                if (usuarioActual) { usuarioActual.esConductor = true; usuarioActual.vehiculo = vehiculo; actualizarUI(); }
+            };
+        }
+        
+        async function abrirPerfilModal() {
+            const modal = document.getElementById('perfilModal');
+            const body = document.getElementById('perfilModalBody');
+            body.innerHTML = `<div style="text-align:center;"><h3>${usuarioActual.nombre}</h3><p>${usuarioActual.email}</p><p>📱 ${usuarioActual.telefono}</p><hr style="margin:16px 0;"><h4>🚗 Vehículo</h4>
+                <div class="row-2cols"><div><label>Placa</label><input type="text" id="vehPlaca" value="${usuarioActual.vehiculo?.placa || ''}" placeholder="ABC-123"></div><div><label>Marca</label><input type="text" id="vehMarca" value="${usuarioActual.vehiculo?.marca || ''}"></div></div>
+                <div class="row-2cols"><div><label>Modelo</label><input type="text" id="vehModelo" value="${usuarioActual.vehiculo?.modelo || ''}"></div><div><label>Año</label><input type="number" id="vehAnio" value="${usuarioActual.vehiculo?.anio || ''}"></div></div>
+                <div class="row-2cols"><div><label>Color</label><input type="text" id="vehColor" value="${usuarioActual.vehiculo?.color || ''}"></div><div><label>Tipo</label><select id="vehTipo"><option ${usuarioActual.vehiculo?.tipo==='Sedán'?'selected':''}>Sedán</option><option ${usuarioActual.vehiculo?.tipo==='SUV'?'selected':''}>SUV</option><option ${usuarioActual.vehiculo?.tipo==='Camioneta'?'selected':''}>Camioneta</option></select></div></div>
+                <button class="btn-primary" id="guardarPerfilBtn">Guardar cambios</button>${!usuarioActual.esConductor ? `<button class="btn-primary btn-warning" id="registrarConductorBtn" style="margin-top:12px; background:#f59e0b;">Registrarme como conductor</button>` : ''}
+                <button class="btn-secondary" id="cerrarPerfilBtn" style="margin-top:12px;">Cerrar</button>`;
+            modal.style.display = 'flex';
+            document.getElementById('guardarPerfilBtn').onclick = async () => {
+                const vehiculo = { placa: document.getElementById('vehPlaca').value, marca: document.getElementById('vehMarca').value, modelo: document.getElementById('vehModelo').value, anio: document.getElementById('vehAnio').value, color: document.getElementById('vehColor').value, tipo: document.getElementById('vehTipo').value };
+                const q = query(collection(db, "usuarios"), where("email", "==", usuarioActual.email));
+                const snap = await getDocs(q);
+                if (!snap.empty) { await updateDoc(doc(db, "usuarios", snap.docs[0].id), { vehiculo, esConductor: true }); }
+                usuarioActual.vehiculo = vehiculo;
+                usuarioActual.esConductor = true;
+                mostrarToast('✅ Perfil actualizado', '#10b981');
+                cerrarModal('perfilModal');
+                actualizarUI();
+            };
+            document.getElementById('registrarConductorBtn')?.addEventListener('click', async () => {
+                const q = query(collection(db, "usuarios"), where("email", "==", usuarioActual.email));
+                const snap = await getDocs(q);
+                if (!snap.empty) { await updateDoc(doc(db, "usuarios", snap.docs[0].id), { esConductor: true }); }
+                usuarioActual.esConductor = true;
+                mostrarToast('✅ Ahora eres conductor', '#10b981');
+                cerrarModal('perfilModal');
+                actualizarUI();
+            });
+            document.getElementById('cerrarPerfilBtn').onclick = () => cerrarModal('perfilModal');
+        }
+        
+        async function mostrarMisViajes() {
+            if(!usuarioActual) return;
+            const misViajes = viajesGlobales.filter(v => v.conductor === usuarioActual.nombre);
+            const reservados = viajesGlobales.filter(v => v.pasajeros?.includes(usuarioActual.nombre));
+            const body = document.getElementById('misViajesBody');
+            body.innerHTML = `<h4>🚗 Viajes que publiqué (${misViajes.length})</h4>${misViajes.length===0?'<p>No has publicado viajes</p>':misViajes.map(v => `<div class="trip-card"><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha}<br>Pasajeros: ${v.pasajeros?.length||0}/${v.plazasOriginal}<br>${v.pasajeros?.map(p => `<div>${p} ${v.codigosPendientes?.includes(p) ? `<button class="btn-verificar" onclick="abrirVerificar('${v.id}','${p}')" style="background:#8b5cf6;color:white;border:none;padding:2px 8px;border-radius:40px;">Verificar</button>` : '<span style="color:#10b981;">✓ Completado</span>'}</div>`).join('')}</div>`).join('')}<hr><h4>👤 Viajes que reservé (${reservados.length})</h4>${reservados.length===0?'<p>No has reservado viajes</p>':reservados.map(v => `<div class="trip-card"><strong>${v.origen} → ${v.destino}</strong> - ${v.fecha}<br>Conductor: ${v.conductor}<br>Código: ${v.codigos?.[usuarioActual.nombre] || 'No disponible'}</div>`).join('')}`;
+            document.getElementById('misViajesModal').style.display = 'flex';
+        }
+        
+        window.abrirVerificar = async (id, pasajero) => {
+            const modal = document.getElementById('verificarModal');
+            const body = document.getElementById('verificarBody');
+            body.innerHTML = `<p>Verificar código para <strong>${pasajero}</strong></p><input type="text" id="codigoInput" maxlength="6" placeholder="Código" style="width:100%;padding:12px;margin:12px 0;border-radius:16px;"><button class="btn-primary" id="confirmarVerificar">Verificar</button>`;
+            modal.style.display='flex';
+            document.getElementById('confirmarVerificar').onclick = async () => {
+                const codigo = document.getElementById('codigoInput').value;
+                const viaje = viajesGlobales.find(v => v.id === id);
+                if(viaje?.codigos?.[pasajero] === codigo) {
+                    const nuevos = viaje.codigosPendientes.filter(p => p !== pasajero);
+                    await actualizarViaje(id, { codigosPendientes: nuevos });
+                    mostrarToast('✅ Viaje completado', '#10b981');
+                    cerrarModal('verificarModal');
+                    mostrarMisViajes();
+                } else mostrarToast('❌ Código incorrecto', '#ef4444');
+            };
+        };
+        
+        function actualizarUI() {
+            const loginControls = document.getElementById('loginControls');
+            const userControls = document.getElementById('userControls');
+            const userNameDisplay = document.getElementById('userNameDisplay');
+            const userRoleBadge = document.getElementById('userRoleBadge');
+            if (usuarioActual) {
+                loginControls.style.display = 'none';
+                userControls.style.display = 'flex';
+                userNameDisplay.innerHTML = `<i class="fas fa-user-circle"></i> ${usuarioActual.nombre}`;
+                userRoleBadge.style.display = usuarioActual.esConductor ? 'inline-block' : 'none';
+                mostrarHome();
+                cargarViajesRealtime();
+            } else {
+                loginControls.style.display = 'flex';
+                userControls.style.display = 'none';
+                mostrarHomeSinSesion();
+            }
+        }
+        
+        // Configurar eventos y observador de autenticación
+        document.getElementById('showLoginBtn').onclick = () => abrirLoginModal();
+        document.getElementById('showRegisterBtn').onclick = () => abrirRegisterModal();
+        document.getElementById('logoutBtn').onclick = async () => { await signOut(auth); mostrarToast('Sesión cerrada', '#f59e0b'); };
+        document.getElementById('miPerfilBtn').onclick = () => abrirPerfilModal();
+        document.getElementById('misViajesBtn').onclick = () => mostrarMisViajes();
+        document.getElementById('goHomeBtn').onclick = () => { if(usuarioActual) mostrarHome(); else mostrarHomeSinSesion(); };
+        
+        // Modo oscuro
+        const toggleDark = () => { const isDark = document.body.classList.toggle('dark'); localStorage.setItem('darkMode', isDark); document.getElementById('themeToggle').innerHTML = isDark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; document.getElementById('themeToggle2').innerHTML = isDark ? '<i class="fas fa-sun"></i><span>Modo claro</span>' : '<i class="fas fa-moon"></i><span>Modo oscuro</span>'; };
+        document.getElementById('themeToggle').onclick = toggleDark;
+        document.getElementById('themeToggle2').onclick = toggleDark;
+        if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+        
+        // Observador de autenticación
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userData = await obtenerUsuarioPorEmail(user.email);
+                if (userData) {
+                    usuarioActual = { uid: user.uid, email: user.email, nombre: userData.nombre, telefono: userData.telefono, esConductor: userData.esConductor || false, vehiculo: userData.vehiculo };
+                } else {
+                    usuarioActual = { uid: user.uid, email: user.email, nombre: user.email.split('@')[0], esConductor: false };
+                }
+                actualizarUI();
+            } else {
+                usuarioActual = null;
+                actualizarUI();
+            }
+        });
+        
+        // Inicializar
+        mostrarHomeSinSesion();
     </script>
 </body>
 </html>
